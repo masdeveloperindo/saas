@@ -41,7 +41,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 - [ ] K0.06 Tinjau struktur folder, metode singkat, penamaan jelas, penghindaran duplikasi/N+1 dan format Pint; tidak membuat lapisan generik yang belum dibutuhkan.
 - [ ] K1.07 Terapkan tabel/kolom bisnis Bahasa Indonesia sesuai PRD; Model menetapkan tabel/FK eksplisit dan autentikasi `Pengguna` tetap kompatibel Laravel. Uji migration, relasi, constraint dan transaksi MariaDB.
-- [ ] K2.09 Terapkan tugas dan batas role PRD §4.2/13; uji rangkap role, lingkup penugasan, larangan eskalasi owner, persetujuan izin oleh pejabat selain pengaju dan privasi laporan.
+- [ ] K2.09 Terapkan 13 role inti PRD §4.2/13; gabungkan pengelolaan BKK/Tracer dalam Pengelola Alumni dan jabatan lain sebagai penugasan, bukan role baru; uji rangkap role, lingkup penugasan, larangan eskalasi owner, persetujuan izin oleh pejabat selain pengaju dan privasi laporan.
 - [ ] F0.11 Siapkan locale `id`, `lang="id"` dan terjemahan Indonesia untuk UI, autentikasi, validasi, pesan framework/paket, laporan serta teks aksesibilitas. Format tanggal/angka Indonesia dan Rupiah.
 - [ ] F7.13 Uji seluruh layar/alur rilis dalam Bahasa Indonesia termasuk error/validasi/reset sandi, modal, laporan/cetak dan tampilan mobile; kode status internal tidak tampil mentah.
 
@@ -138,7 +138,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F2.05 Buat dashboard **sudah diproses / belum diproses / gagal**, agar sebagian siswa tidak hilang ketika tahun ajaran aktif berubah.
 - [ ] F2.06 Buat **proses kelulusan terpisah** (tidak otomatis saat naik tingkat/tahun ajaran), mendukung lulus, belum lulus, dan pengecualian.
 - [ ] F2.07 Pastikan kelulusan hanya sekali per siswa, alumni baru terhubung ke siswa dan memakai **akun yang sama** jika sudah ada.
-- [ ] F2.08 Portal registrasi mandiri **alumni lama**, pencocokan identitas, review/verifikasi Admin BKK jika BKK aktif atau Admin Tracer jika hanya Tracer aktif, pencegahan klaim ganda dan penyamaran.
+- [ ] F2.08 Portal registrasi mandiri **alumni lama**, pencocokan identitas, review/verifikasi Pengelola Alumni, pencegahan klaim ganda dan penyamaran.
 - [ ] F2.09 Buat `profil_alumni` dengan `siswa_id` nullable untuk alumni lama; proses tautkan arsip siswa bila cocok dan diverifikasi.
 - [ ] F2.10 Profil alumni dan histori **pekerjaan, kuliah, wirausaha** yang dapat tumpang tindih; tanggal mulai/selesai dan status aktif.
 - [ ] F2.11 Data status perkawinan/kejadian pribadi hanya **opsional dan privat**, tidak wajib untuk tracer umum.
@@ -197,7 +197,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 |---|---|---|---|---|
 | 01 | `website` | CMS halaman, berita, pengumuman, galeri, profil jurusan, **menu/submenu dinamis** (urut/sembunyi/URL) | Editor buat → preview → terbit → pengunjung lihat | `12-website.html` |
 | 02 | `surat` | Surat masuk/keluar, nomor unik, template, arsip; **file opsional** (catat metadata/editor/upload) | TU buat/catat → persetujuan seperlunya → arsip | `10-surat.html` |
-| 03 | `absensi_izin` | **Absensi siswa saja**, izin siswa/guru, persetujuan, rekonsiliasi izin–absensi | Guru piket absen; siswa/guru ajukan izin → pejabat setujui → rekap | `08-absensi.html` |
+| 03 | `absensi_izin` | **Presensi siswa per jam pelajaran**, konfirmasi wali kelas, penanganan bersama BK, izin siswa/guru dan penyelarasan per jam | Guru mapel presensi tiap jam → wali kelas konfirmasi → wali kelas bersama BK tindak lanjut; izin sesuai pejabat berwenang | `08-absensi.html` |
 | 04 | `pelanggaran` | Tata tertib, bobot, catat, validasi, pembinaan, keberatan | Guru catat → Kesiswaan validasi → BK tindak lanjut | `13-pelanggaran.html` |
 | 05 | `pkl` | Mitra, penempatan, jurnal, absensi, monitoring, nilai industri **diinput guru dari kertas** | Koordinator tempatkan → siswa jurnal → guru pantau/input nilai → laporan | `07-pkl.html` |
 | 06 | `jurnal_guru` | Isi jurnal, riwayat, pemeriksaan, rekap | Guru isi → Waka monitor | `14-modul-lain.html` |
@@ -241,7 +241,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 - [ ] F5.01 `website` — UI + backend + role + test selesai.
 - [ ] F5.02 `surat` — UI + backend + role + test selesai (upload **tidak wajib**).
-- [ ] F5.03 `absensi_izin` — UI + backend + role + test selesai (**tanpa absensi guru**).
+- [ ] F5.03 `absensi_izin` — tabel `sesi_pelajaran`, `kehadiran_siswa` dan `tindak_lanjut_presensi` sesuai PRD §12.6, sesi per jam, input guru mapel, konfirmasi wali kelas, penanganan bersama BK, rekap dan izin per rentang waktu; UI/backend/otorisasi dan tes selesai, tanpa presensi guru.
 - [ ] F5.04 `pelanggaran` — UI + backend + role + test selesai (validasi sebelum poin final).
 - [ ] F5.05 `pkl` — UI + backend + role + test selesai (**tanpa akun industri**).
 - [ ] F5.06 `jurnal_guru` — UI + backend + role + test selesai.
@@ -262,7 +262,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F6.01 **Kenaikan/kelulusan ↔ Keuangan:** tagihan lama tetap menunjuk `siswa_id`, tarif dan kelas saat diterbitkan tidak berubah; tunggakan tidak hilang.
 - [ ] F6.02 **Kelulusan ↔ Alumni/BKK/Tracer:** alumni baru ditautkan ke siswa yang lulus, alumni lama tidak membuat siswa fiktif.
 - [ ] F6.03 **Sarpras ↔ Laboratorium:** satu `aset.id` untuk aset unit yang sama, perubahan kondisi/lokasi muncul di dua modul.
-- [ ] F6.04 **Absensi ↔ Izin:** persetujuan izin siswa selaras dengan status absensi dan meninggalkan jejak perubahan.
+- [ ] F6.04 **Absensi ↔ Izin:** izin siswa diselaraskan hanya ke sesi/jam dalam rentang izin; perubahan sesudah konfirmasi diaudit dan meminta konfirmasi ulang wali kelas.
 - [ ] F6.05 **PKL ↔ HUBIN:** satu tabel mitra industri; data perusahaan yang sama tidak diduplikasi.
 - [ ] F6.06 **Jurnal Mengajar ↔ Jadwal:** jadwal otomatis menjadi pilihan bila modul jadwal aktif, bukan syarat wajib jurnal.
 - [ ] F6.07 **Pelanggaran ↔ BK:** hanya rujukan tindak lanjut minimal; isi konseling tidak bocor ke pelapor.
@@ -288,6 +288,8 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F7.12 Jalankan tes otomatis serta UAT operator sekolah (TU, guru, wali kelas, BK, Bendahara, HUBIN, Admin).
 
 **Selesai jika:** tidak ada bug kritis/tinggi terbuka; tes kritis lulus; pengguna bisa menyelesaikan alur utama tanpa instruksi teknis.
+
+- [ ] F7.14 Uji guru mapel mengisi tiap jam hanya pada sesi ditugaskan; siswa sama bisa Hadir pada jam pertama dan Alpa pada jam berikutnya tanpa tertimpa. Wali kelas lain ditolak mengonfirmasi; koreksi meminta konfirmasi ulang; sesi kosong bukan Alpa; izin parsial tidak mengubah jam lain; wali kelas dan BK menindaklanjuti tanpa membocorkan konseling. Uji alur saat modul Jadwal/BK tidak aktif.
 
 ## F8 — Validasi rilis aplikasi (infrastruktur terpisah)
 
@@ -638,7 +640,7 @@ Gerbang modul dan integrasi diuji sesuai cakupan rilis yang dicatat; modul di lu
 - [ ] B04 Program empat tahun mendukung XII→XIII, sedangkan program tiga tahun tidak memaksakan XIII.
 - [ ] B05 Tahun ajaran baru tidak otomatis menaikkan siswa; siswa belum diproses tetap terdaftar dan terhitung.
 - [ ] B06 Kelulusan disetujui operator berwenang; tidak otomatis karena tahun berubah. Akun siswa yang lulus berlanjut sebagai alumni bila ada.
-- [ ] B07 Alumni lama registrasi mandiri, dicegah klaim identitas orang lain, diverifikasi Admin BKK atau Admin Tracer sesuai modul aktif, tidak perlu siswa fiktif.
+- [ ] B07 Alumni lama registrasi mandiri, dicegah klaim identitas orang lain, diverifikasi Pengelola Alumni, tidak perlu siswa fiktif.
 - [ ] B08 Alumni mengelola riwayat kerja/kuliah/usaha yang boleh bertumpang tindih; informasi pernikahan opsional, privat.
 - [ ] B09 Tagihan menyimpan snapshot periode/tarif/kelas, tidak berubah saat siswa naik/pindah/lulus.
 - [ ] B10 Pembayaran cicilan, kuitansi unik, koreksi/void diaudit, transaksi bersamaan tidak menyebabkan overpayment.
@@ -666,7 +668,7 @@ Gerbang modul dan integrasi diuji sesuai cakupan rilis yang dicatat; modul di lu
 **Pemeriksaan integrasi kritis:**
 
 - [ ] C01 PKL: nilai industri dari lembar kertas diinput guru; tidak perlu akun industri; bukti file opsional.
-- [ ] C02 Absensi hanya siswa; izin siswa **dan** guru dalam satu modul; tidak ada absensi guru.
+- [ ] C02 Guru mapel mencatat presensi siswa per jam, wali kelas mengonfirmasi, wali kelas dan BK menindaklanjuti; izin siswa/guru dalam satu modul, tanpa presensi guru.
 - [ ] C03 Surat bisa dicatat/disimpan tanpa file dan tetap bisa dibuat/upload dokumen bila dibutuhkan.
 - [ ] C04 Sarpras dan Lab memakai `aset.id` sama; stok bahan pakai tidak negatif; peminjaman unit tidak ganda.
 - [ ] C05 Hubin–PKL dan BKK–Tracer berbagi master data, tidak ada identitas perusahaan/alumni ganda.

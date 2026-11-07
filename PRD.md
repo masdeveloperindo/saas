@@ -138,37 +138,25 @@
 
 ## 4.2 Role dan tugasnya
 
-Role adalah penugasan, bukan akun terpisah untuk setiap jabatan. Satu pengguna boleh merangkap role; setiap akses tetap dibatasi hak tindakan, objek penugasan, dan lisensi fitur. Jabatan tidak otomatis memberikan seluruh izin modul.
+Gunakan **13 role inti** berikut. Jabatan seperti Waka Kurikulum/Kesiswaan/HUBIN/Sarpras, wali kelas, guru piket, pembimbing/koordinator PKL, supervisor, serta kepala/petugas lab adalah **penugasan dan hak akses**, bukan role tambahan. Satu akun bisa mendapat beberapa penugasan; lisensi modul dan lingkup objek tetap diperiksa. Pengunjung publik tidak memerlukan role/akun.
 
-| Role | Tugas utama | Batas akses dan persetujuan |
+| Role | Tugas utama | Batas akses dan penugasan |
 |---|---|---|
-| Owner SaaS / Super Admin | Kelola 15 lisensi lokal, masa berlaku dan pembayaran langganan; periksa versi instalasi. | Panel `/owner`, MFA wajib sebelum produksi; bukan pemberi akses bebas data sekolah/BK/keuangan. |
-| Admin Sekolah | Kelola profil, tahun ajaran/semester, program, kelas, akun/peran operasional, impor data, kenaikan dan kelulusan. | Data operasional sesuai izin; tidak dapat mengangkat dirinya menjadi owner atau membaca isi konseling otomatis. |
-| Kepala Sekolah | Pantau laporan sekolah, tetapkan pejabat persetujuan, setujui surat/hasil supervisi sesuai kebijakan. | Laporan agregat; data pribadi rinci hanya dengan izin khusus, tidak otomatis membuka konseling. |
-| Waka Kurikulum | Kelola/publikasikan jadwal, cek bentrok, pantau jurnal dan koordinasikan supervisi. | Bidang kurikulum dan guru/kelas terkait; bukan pengelola pembayaran atau lisensi. |
-| Waka Kesiswaan | Tinjau izin siswa sesuai penugasan, validasi/koreksi poin dan koordinasikan pembinaan. | Siswa dalam lingkup tugas; tidak otomatis membaca isi konseling. |
-| Waka HUBIN | Periksa kerja sama industri, pantau PKL dan laporan hubungan industri. | Mitra dan kegiatan terkait; persetujuan kerja sama sesuai penunjukan sekolah. |
-| Waka Sarpras | Pantau inventaris, kondisi, peminjaman serta kebutuhan ruang/aset. | Aset/unit yang ditugaskan; stok dan laporan lab sesuai izin. |
-| Guru Mata Pelajaran | Isi/koreksi jurnal sendiri, lihat jadwal terbit dan ajukan izin diri. | Kelas/mapel yang ditugaskan; tidak ada absensi guru. |
-| Wali Kelas | Pantau data, histori kelas, kehadiran dan pembinaan siswa binaan; rujuk ke BK. | Hanya kelas binaan; tidak menyetujui kelulusan atau membaca catatan BK otomatis. |
-| Guru Piket | Catat kehadiran siswa dan kejadian pelanggaran; catat pengajuan izin dari bukti manual. | Kelas/tanggal penugasan; poin belum berlaku sebelum validasi. |
-| Tata Usaha | Catat surat masuk/keluar, kelola templat, nomor final dan arsip; file boleh kosong. | Arsip sesuai tugas; surat tertentu harus disetujui pejabat penandatangan. |
-| Bendahara | Kelola tarif/tagihan, catat cicilan, cetak kuitansi, rekap tunggakan, koreksi/void beralasan. | Keuangan sekolah; koreksi transaksi sah memerlukan izin persetujuan khusus dan audit, bukan menghapus pembayaran. |
-| Koordinator PKL | Kelola periode, kuota mitra, penempatan, pembimbing dan rekap nilai final. | Modul PKL aktif; siswa peserta periode yang dikelola. |
-| Guru Pembimbing PKL | Periksa jurnal/kehadiran PKL, catat monitoring dan transkripsi nilai industri dari kertas. | Hanya siswa bimbingan; koreksi nilai final beralasan dan diaudit; industri tidak login. |
-| Admin BKK | Terbitkan lowongan, verifikasi klaim alumni, kelola status seleksi dan laporan penempatan. | BKK aktif; kandidat identitas hanya dilihat petugas, bukan dibuka ke pendaftar. |
-| Admin Tracer | Kelola periode/form survei, verifikasi alumni bila hanya Tracer aktif, pantau jawaban dan laporan. | Tracer aktif; simpan jawaban historis, data pribadi opsional tidak masuk laporan umum. |
-| Staf HUBIN | Catat mitra, dokumen kerja sama, masa berlaku dan kegiatan industri. | Mitra bersama PKL; dokumen privat sesuai penugasan. |
-| Petugas Sarpras | Kelola unit aset, lokasi/kondisi, serah-terima dan pengembalian pinjaman. | Sarpras aktif dan lingkup aset ditugaskan; tidak membuat salinan aset Lab. |
-| Guru BK | Terima rujukan, tangani kasus/sesi konseling, simpan catatan privat dan tindak lanjut. | Kasus sesuai penugasan; laporan pimpinan agregat, isi rahasia tidak dikirim ke pelapor. |
-| Kepala Lab / Petugas Lab | Kelola ruang, alat, pemesanan ruang, stok bahan, peminjaman dan kerusakan. | Lab aktif; hanya ruang/aset lab ditugaskan. Tetap dapat bekerja saat Sarpras tidak aktif. |
-| Guru Praktik / Pegawai Peminjam | Ajukan penggunaan ruang/peminjaman alat, laporkan pengembalian/kerusakan. | Permintaan sendiri; tidak mengubah saldo stok atau persetujuan petugas. |
-| Supervisor | Isi instrumen, observasi, nilai dan rekomendasi supervisi. | Guru yang ditugaskan; guru yang dinilai hanya melihat hasil miliknya. |
-| Editor Website | Kelola halaman, berita, galeri, tampilan dan menu/submenu; pratinjau/terbit/arsip. | Website aktif; publik hanya konten terbit, tanpa akses data privat sekolah. |
-| Siswa | Lihat profil/jadwal/data sendiri, isi jurnal PKL, ajukan izin/layanan BK sesuai fitur aktif. | Hanya diri sendiri dan fitur diizinkan; tidak mengubah nilai, tagihan, poin final atau persetujuan. |
-| Alumni | Daftar/klaim identitas, kelola profil/riwayat sendiri, melamar lowongan dan mengisi tracer. | Akses alumni setelah verifikasi; registrasi saat BKK atau Tracer aktif; tidak membuat siswa fiktif. |
-| Orang Tua / Wali Siswa | Lihat data anak yang diizinkan dan ajukan izin siswa jika akun diaktifkan. | Relasi wali–anak wajib diverifikasi; akun opsional; tidak membaca isi konseling privat. |
-| Pengunjung Publik | Baca informasi sekolah dan konten website yang terbit. | Tanpa akses admin, draft, dokumen privat atau data pribadi siswa. |
+| Owner SaaS | Kelola lisensi, masa berlaku, pembayaran langganan dan versi instalasi. | MFA wajib; tidak otomatis membaca data pribadi sekolah. |
+| Admin Sekolah | Kelola profil, master akademik, akun/peran operasional, impor, kenaikan dan kelulusan. | Tidak dapat memberikan role owner atau membuka isi konseling otomatis. |
+| Pimpinan Sekolah | Kepala Sekolah/Waka memantau laporan dan memberi persetujuan sesuai bidang. | Bidang kurikulum, kesiswaan, HUBIN atau sarpras merupakan penugasan; laporan privat tetap dibatasi. |
+| Guru | Catat presensi siswa per jam mapel, jurnal, izin diri dan pembinaan sesuai tugas. | Hanya mapel/kelas/siswa ditugaskan; wali kelas mengonfirmasi presensi kelas binaan. Pembimbing PKL/supervisor adalah penugasan, bukan role baru. |
+| Tata Usaha | Kelola surat, templat, penomoran dan arsip; bantu administrasi yang diberi izin. | Surat tertentu memerlukan pejabat penandatangan; tidak mendapat akses keuangan/BK otomatis. |
+| Bendahara | Kelola tarif, tagihan, cicilan, kuitansi, tunggakan dan koreksi beralasan. | Koreksi/void memerlukan hak khusus dan audit; tidak menghapus pembayaran sah. |
+| Pengelola Alumni | Verifikasi alumni, kelola lowongan/lamaran BKK, periode/form tracer dan laporan alumni. | Satu role untuk BKK dan Tracer; fitur tetap mengikuti lisensi masing-masing, registrasi bila salah satunya aktif. |
+| Pengelola Sarana | Kelola aset, ruang, peminjaman dan stok lab sesuai unit penugasan. | Sarpras dan Lab satu role dengan izin fitur/lokasi terpisah; master aset tetap tunggal. |
+| Guru BK | Bersama wali kelas menangani masalah presensi, rujukan dan pembinaan; kelola konseling privat sesuai izin. | Hanya siswa/kasus ditugaskan; isi konseling tidak ikut laporan presensi bersama. |
+| Editor Website | Kelola konten, media, menu/submenu, pratinjau, terbit dan arsip. | Website aktif; publik hanya melihat konten terbit. |
+| Siswa | Lihat data sendiri, isi jurnal PKL dan ajukan izin/layanan sesuai fitur aktif. | Tidak mengubah presensi guru, konfirmasi wali kelas, nilai atau persetujuan. |
+| Alumni | Kelola profil/riwayat sendiri, melamar dan mengisi tracer setelah verifikasi. | Hanya data sendiri dan fitur berlisensi aktif. |
+| Orang Tua / Wali Siswa | Pantau data anak yang diizinkan dan ajukan izin bila akun diaktifkan. | Akun opsional; hubungan wali–anak diverifikasi; bukan akses isi konseling privat. |
+
+**Pemetaan jabatan:** Kepala Sekolah/Waka memakai role Pimpinan Sekolah; wali kelas, guru mapel/praktik/piket, pembimbing PKL dan supervisor guru memakai role Guru dengan penugasan terkait. Koordinator PKL/Staf HUBIN memakai Guru atau Tata Usaha sesuai pegawainya dan hak modul yang ditugaskan. Kepala/Petugas Lab dan Petugas Sarpras memakai Pengelola Sarana. Sebutan jabatan di Bab 7/13 menjelaskan penugasan pada role inti, bukan daftar role baru.
 
 ### 4.2.1 Penetapan peran dan alur persetujuan
 
@@ -176,7 +164,7 @@ Role adalah penugasan, bukan akun terpisah untuk setiap jabatan. Satu pengguna b
 - Penugasan menyebut lingkup kelas, siswa bimbingan, kasus, ruang/aset, periode atau bidang. Rangkap jabatan tetap mengikuti lingkup tersebut; perubahan hak akses berlaku pada request berikutnya dan diaudit.
 - Izin siswa diputuskan Waka Kesiswaan/pejabat yang ditunjuk; izin guru diputuskan Kepala Sekolah/pejabat berwenang. Pengaju tidak boleh menyetujui pengajuannya sendiri.
 - Pelanggaran diperiksa Waka Kesiswaan/petugas validator sebelum poin final. Koreksi pembayaran hanya oleh petugas dengan hak khusus; surat tertentu oleh penandatangan yang ditunjuk. Tidak menambah persetujuan berlapis pada pekerjaan biasa.
-- Verifikasi alumni dilakukan Admin BKK bila BKK aktif atau Admin Tracer bila hanya Tracer aktif; tidak membuka portal tanpa salah satu lisensi tersebut.
+- Verifikasi alumni dilakukan Pengelola Alumni; tidak membuka portal tanpa salah satu lisensi tersebut.
 - Hak membuat, melihat, mengubah, menyetujui, mengekspor dan mengunduh harus diuji terpisah. Rincian matriks per tindakan/modul pada Bab 13 melengkapi daftar tugas di sini.
 
 # 5. Desain data siswa dan proses akademik — persyaratan KRITIS
@@ -215,7 +203,7 @@ Tabel di bawah adalah **model logis minimal** untuk desain database. Nama kolom 
 | `kelompok_kenaikan` + `peserta_kenaikan` | tahun asal/tujuan, keputusan per siswa, kelas tujuan, `diproses_pada` | Audit keputusan naik kelas/tinggal kelas/pending serta pencegah proses ganda. |
 | `kelulusan` | `siswa_id` unique, `tanggal_lulus`, `tahun_ajaran_id`, `referensi_keputusan` nullable | **Hanya untuk siswa yang dinyatakan lulus.** Kelulusan final per siswa dicatat sekali, koreksi melalui prosedur khusus. |
 | `profil_alumni` | `id` PK, `siswa_id` **nullable unique**, `pengguna_id` nullable unique, nama, angkatan/tahun lulus, jurusan, kontak, status verifikasi | **Identitas alumni.** Lulusan tercatat ditautkan ke `siswa.id`; alumni lama tidak dipaksa punya record siswa. |
-| `pengajuan_registrasi_alumni` | `id`, `pengguna_id`, nama, tahun lulus, jurusan, NIS opsional, `status`, `diperiksa_oleh` | Klaim mandiri yang ditinjau petugas alumni (Admin BKK atau Admin Tracer) sebelum membuka akses alumni. |
+| `pengajuan_registrasi_alumni` | `id`, `pengguna_id`, nama, tahun lulus, jurusan, NIS opsional, `status`, `diperiksa_oleh` | Klaim mandiri yang ditinjau petugas alumni (Pengelola Alumni) sebelum membuka akses alumni. |
 | `riwayat_alumni` | `id`, `profil_alumni_id`, `jenis`, `organisasi`, `jabatan_atau_program`, `tanggal_mulai`, `tanggal_selesai` nullable, `catatan` nullable | Riwayat pekerjaan, wirausaha, pendidikan, dan aktivitas lain yang berulang; jangan menimpa catatan lama. |
 | `peristiwa_pribadi_alumni` | `id`, `profil_alumni_id`, `jenis_peristiwa`, `tanggal_kejadian` nullable, `catatan` nullable | Catatan pribadi **opsional** seperti menikah; privat dan tidak ditampilkan dalam laporan umum. |
 | `pengguna` | `id`, `email`/login, password hash, status | Akun login **terpisah** dari identitas siswa; siswa boleh belum memiliki akun. Hubungkan dengan `siswa.pengguna_id` nullable atau tabel relasi akun. |
@@ -373,7 +361,7 @@ Aturan proses yang harus diuji:
 | Modul | Identitas utama | Data historis yang harus dipertahankan |
 |---|---|---|
 | Absensi Siswa | `siswa_id` + tanggal + tahun ajaran | Kelas/penempatan saat absensi; jangan berubah sesudah mutasi kelas. |
-| Perizinan Siswa | `siswa_id` + rentang tanggal | Status izin dan keputusan; satu tanggal tidak boleh punya dua absensi yang saling bertentangan. |
+| Perizinan Siswa | `siswa_id` + rentang tanggal | Status izin dan keputusan; satu sesi/jam tidak boleh punya dua presensi siswa yang bertentangan; izin boleh mencakup sebagian jam. |
 | PKL | `siswa_id` + periode penempatan | Lokasi PKL, guru pembimbing, jurnal dan nilai di periode itu. |
 | BK & Pelanggaran | `siswa_id` + tanggal kejadian | Catatan tetap pada identitas yang sama tanpa ikut pindah kelas; tampilan laporan historis memakai kelas saat peristiwa. |
 | Keuangan | `siswa_id` + tagihan | Kelas/tarif saat tagihan dibuat. |
@@ -409,14 +397,14 @@ Aturan proses yang harus diuji:
 1. Jika **modul BKK atau Tracer Study aktif**, portal `/alumni/daftar` tersedia walaupun modul Website tidak aktif. Pendaftaran dibatasi agar tidak disalahgunakan.
 2. Alumni mengisi **nama lengkap, tahun lulus, jurusan saat lulus, email aktif, password**, dan **NIS jika ingat (opsional)**. Tanggal lahir atau informasi tambahan dapat diminta **untuk proses verifikasi**, tidak wajib ditampilkan pada profil publik. Tidak meminta status menikah saat daftar.
 3. Sistem membuat akun **berstatus menunggu verifikasi** dan `pengajuan_registrasi_alumni`, **belum** memberi hak membaca data siswa, tagihan, atau riwayat orang lain. Email boleh diverifikasi dengan tautan jika SMTP tersedia; pengiriman langsung, tanpa Queue.
-4. **Petugas alumni (Admin BKK atau Admin Tracer)** meninjau klaim dan mencari kecocokan pada `siswa`, `kelulusan`, dan `profil_alumni` berdasarkan beberapa informasi. Sistem menampilkan kandidat **hanya kepada admin**, bukan kepada pendaftar. **Jangan otomatis menghubungkan identitas hanya berdasarkan nama/NIS.**
+4. **Petugas alumni (Pengelola Alumni)** meninjau klaim dan mencari kecocokan pada `siswa`, `kelulusan`, dan `profil_alumni` berdasarkan beberapa informasi. Sistem menampilkan kandidat **hanya kepada admin**, bukan kepada pendaftar. **Jangan otomatis menghubungkan identitas hanya berdasarkan nama/NIS.**
 5. Bila cocok dengan alumni yang **sudah punya `profil_alumni`**, petugas alumni menghubungkan akun ke profil yang sama setelah verifikasi identitas; **tidak membuat profil kedua**.
 6. Bila cocok dengan siswa lama yang sudah lulus tetapi belum mempunyai profil alumni, petugas alumni membuat satu `profil_alumni` yang menaut ke `siswa.id` tersebut. Keputusan lulus harus dapat dibuktikan dari catatan sekolah.
 7. Bila **alumni lama benar-benar tidak ada pada master siswa**, petugas alumni menyetujui dan membuat `profil_alumni` dengan `siswa_id = NULL`, memakai data kelulusan yang telah diverifikasi.
 8. Jika klaim tidak dapat dibuktikan atau duplikat mencurigakan, status **Perlu Klarifikasi / Ditolak**. Pendaftar dapat melengkapi informasi; admin mencatat alasan keputusan.
 9. Alumni yang disetujui dapat login, melengkapi profil dan mengubah **riwayatnya sendiri**. Pendaftar yang belum diverifikasi hanya dapat melihat status registrasi dan mengoreksi pengajuan.
 
-**Petugas verifikasi:** Admin BKK jika modul BKK aktif, atau Admin Tracer jika hanya modul Tracer yang aktif.
+**Petugas verifikasi:** Pengelola Alumni.
 
 **Status registrasi:** Menunggu Verifikasi → Disetujui / Perlu Klarifikasi / Ditolak. **Akun tidak otomatis disetujui karena NIS/NISN cocok.**
 
@@ -551,36 +539,30 @@ Aturan proses yang harus diuji:
 
 ## 03. Absensi Siswa & Perizinan
 
-**Tujuan.** Mencatat kehadiran siswa serta izin siswa dan guru dalam satu modul, tanpa absensi guru.
+**Tujuan.** Guru mata pelajaran mencatat presensi siswa **pada setiap jam pelajaran**, wali kelas mengonfirmasi, kemudian wali kelas bersama Guru BK menangani masalah kehadiran. Tidak ada presensi guru.
 
-**Role.** Guru Piket, Wali Kelas, Siswa/Orang Tua (opsional), Guru pengaju izin, Waka Kesiswaan/Kepala Sekolah.
+**Pelaksana.** Guru mapel, Guru dengan penugasan wali kelas, Guru BK, siswa/orang tua dan pejabat pemberi izin.
 
-| **Fitur inti** | **Subfitur / cakupan**                                                                       |
-|----------------|----------------------------------------------------------------------------------------------|
-| Absensi siswa  | Hadir, terlambat, sakit, izin, alpa; per kelas/tanggal.                                      |
-| Input absensi  | Manual oleh petugas; QR opsional jika memang dibutuhkan.                                     |
-| Izin siswa     | Pengajuan online atau dicatat petugas dari bukti manual; alasan, tanggal, lampiran opsional. |
-| Izin guru      | Form pengajuan, tanggal, alasan, keputusan. Bukan presensi guru.                             |
-| Persetujuan    | Petugas/pejabat menyetujui atau menolak.                                                     |
-| Rekap          | Laporan hadir siswa dan riwayat izin siswa/guru.                                             |
+| Fitur inti | Cakupan |
+|---|---|
+| Sesi pelajaran | Kelas, tanggal, nomor jam pelajaran, mapel, guru pengajar, waktu mulai/selesai dan rujukan jadwal opsional. |
+| Presensi per jam | Guru mapel mengisi Hadir/Terlambat/Sakit/Izin/Alpa untuk siswa yang berada di kelas pada tanggal tersebut. Jam berurutan tetap punya catatan masing-masing. |
+| Konfirmasi wali kelas | Tinjau kelengkapan semua jam, minta perbaikan bila perlu, lalu konfirmasi catatan kelas binaan. Jam belum diisi bukan Alpa. |
+| Penanganan bersama BK | Wali kelas dan Guru BK meninjau pola ketidakhadiran, mencatat klarifikasi, tindak lanjut dan hasil pembinaan dengan akses terbatas. |
+| Izin siswa/guru | Pengajuan dan persetujuan sesuai kewenangan; izin siswa diselaraskan hanya ke jam yang dicakup rentang izinnya. |
+| Rekap | Per siswa, kelas, mapel, tanggal dan jam; pisahkan belum diisi, belum dikonfirmasi dan sudah dikonfirmasi. |
 
 **Proses bisnis:**
 
-> **1.** Guru Piket/Wali Kelas mengisi absensi siswa.
->
-> **2.** Siswa/orang tua atau petugas mengajukan izin siswa; guru mengajukan izin guru.
->
-> **3.** Pejabat sesuai kewenangan meninjau dan memberikan keputusan.
->
-> **4.** Jika izin siswa disetujui, status absensi tanggal terkait diperbarui/dicocokkan tanpa menduplikasi kehadiran.
->
-> **5.** Petugas mencetak laporan absensi siswa atau rekap izin.
+1. Guru mapel membuka sesi kelas/mapel yang ditugaskan dan mencatat presensi tiap jam pelajaran. Sesi boleh mengambil jadwal jika modul Jadwal aktif; jika tidak, sesi dibuat dari penugasan mengajar yang sah.
+2. Guru mengirim catatan presensi. Wali kelas memeriksa kelengkapan, mencocokkan izin dan meminta klarifikasi/perbaikan bila perlu.
+3. Wali kelas mengonfirmasi catatan setelah sesuai. Status kehadiran siswa terpisah dari status pemeriksaan catatan.
+4. Wali kelas bersama Guru BK menindaklanjuti ketidakhadiran/masalah presensi melalui pembinaan manusia, tanpa hukuman/poin otomatis.
+5. Rekap menampilkan hasil per jam dan konfirmasinya. Ringkasan harian diturunkan dari jam terisi dan menunjukkan jam belum diisi; jangan menggantinya dengan satu catatan harian yang menimpa rincian.
 
-**Status.** Absensi: Hadir/Terlambat/Sakit/Izin/Alpa. Izin: Diajukan → Disetujui/Ditolak.
+**Status pemeriksaan.** Draf → Dikirim → Perlu Perbaikan / Dikonfirmasi. Perubahan presensi setelah konfirmasi, termasuk penyelarasan izin, wajib beralasan, diaudit dan dikonfirmasi ulang oleh wali kelas.
 
-**Hasil.** Rekap kehadiran siswa dan administrasi izin.
-
-**Aturan penting.** Tidak ada check-in/check-out atau rekap kehadiran guru. Perizinan guru tidak mengekspor/mengubah sistem absensi pemerintah. Absensi siswa harus terikat tanggal serta riwayat penempatan kelas saat kejadian; persetujuan izin tidak boleh menciptakan dua status harian yang bertentangan.
+**Privasi dan lisensi.** Kolaborasi tindak lanjut presensi tersedia bagi wali kelas dan Guru BK yang diberi izin pada modul Absensi. Catatan konseling rinci tetap di modul BK berlisensi aktif dan tidak dibuka lewat laporan presensi. Guru BK tidak mengganti konfirmasi wali kelas; guru mapel hanya mengubah sesi pengajarannya. Izin guru tidak membuat catatan kehadiran guru.
 
 ## 04. Administrasi Surat Digital
 
@@ -652,7 +634,7 @@ Aturan proses yang harus diuji:
 
 **Tujuan.** Menyalurkan lowongan, menerima pendaftaran alumni mandiri, dan mencatat proses lamaran alumni/siswa akhir.
 
-**Role.** Admin BKK, Alumni terverifikasi, Siswa akhir (opsional).
+**Role.** Pengelola Alumni, Alumni terverifikasi, Siswa akhir (opsional).
 
 | **Fitur inti** | **Subfitur / cakupan**                     |
 |----------------|--------------------------------------------|
@@ -667,11 +649,11 @@ Aturan proses yang harus diuji:
 
 > **1.** Alumni lama mendaftar sendiri dan diverifikasi petugas alumni; alumni baru dapat memakai akun yang terhubung dari data kelulusan.
 >
-> **2.** Admin BKK memasukkan dan menerbitkan lowongan.
+> **2.** Pengelola Alumni memasukkan dan menerbitkan lowongan.
 >
 > **3.** Alumni terverifikasi melamar pekerjaan dan mengunggah CV bila perlu.
 >
-> **4.** Admin BKK menerima hasil seleksi dari perusahaan di luar sistem dan memperbarui status.
+> **4.** Pengelola Alumni menerima hasil seleksi dari perusahaan di luar sistem dan memperbarui status.
 >
 > **5.** Alumni mengisi riwayat kerja setelah benar-benar mulai bekerja; admin mengunduh laporan.
 
@@ -772,7 +754,7 @@ Aturan proses yang harus diuji:
 
 **Tujuan.** Alumni **lama dan baru** bisa mengisi serta memperbarui riwayat kerja, wirausaha, kuliah, dan perkembangan lain. Sekolah mendapatkan tracer study tanpa kehilangan perjalanan alumni dari waktu ke waktu.
 
-**Role.** Alumni terverifikasi, Admin Tracer/BKK, Kepala Sekolah (rekap agregat).
+**Role.** Alumni terverifikasi, Pengelola Alumni, Kepala Sekolah (rekap agregat).
 
 | **Fitur inti** | **Subfitur / cakupan** |
 |---|---|
@@ -796,7 +778,7 @@ Aturan proses yang harus diuji:
 >
 > **4.** Saat periode tracer dibuka, alumni mengisi ringkasan kondisi saat itu. Data survei historis tidak ditimpa perubahan profil terbaru.
 >
-> **5.** Admin Tracer melihat jumlah responden dan laporan agregat. Data pribadi sensitif tidak tampil dalam laporan umum.
+> **5.** Pengelola Alumni melihat jumlah responden dan laporan agregat. Data pribadi sensitif tidak tampil dalam laporan umum.
 
 **Status registrasi.** Menunggu Verifikasi → Disetujui / Perlu Klarifikasi / Ditolak. **Status survei.** Belum Mengisi → Sudah Mengisi.
 
@@ -961,7 +943,7 @@ Aturan proses yang harus diuji:
 | aset                         | Sarpras, Laboratorium                    | Satu kode/ID aset; stok bahan habis pakai terpisah.                |
 | mitra_industri              | HUBIN, PKL, BKK jika relevan             | Hindari pencatatan perusahaan ganda.                               |
 | kelas + guru             | Jurnal, Jadwal, Absensi                  | Jadwal tersedia sebagai pilihan hanya jika modul Jadwal aktif.     |
-| pengajuan_izin_siswa            | Absensi                                  | Izin siswa disetujui menyelaraskan status absensi tanggal terkait. |
+| pengajuan_izin_siswa            | Absensi                                  | Izin siswa disetujui menyelaraskan presensi hanya pada sesi/jam dalam rentang izin. |
 
 **Independensi modul.** Jika satu modul pasangan tidak aktif, modul lain tetap dapat beroperasi dengan data minimum yang tersedia pada Core System.
 
@@ -977,7 +959,7 @@ Aturan proses yang harus diuji:
 | U06    | Lulus dengan tagihan belum lunas             | Profil alumni muncul; tagihan tetap terlihat pada bendahara.                           |
 | U07    | Tagihan semester lalu setelah naik kelas     | Kelas/nominal tagihan historis tidak berubah.                                          |
 | U08    | Alat Lab diperbaiki melalui menu Lab         | Sarpras membaca kondisi aset terbaru tanpa duplikasi.                                  |
-| U09    | Siswa punya izin disetujui                   | Status absensi siswa untuk tanggal tersebut konsisten, tanpa dua catatan berlawanan.   |
+| U09    | Siswa punya izin disetujui                   | Hanya jam dalam rentang izin yang diselaraskan; catatan jam lain tetap, dan perubahan meminta konfirmasi ulang wali kelas.   |
 | U10    | Guru mengajukan izin                         | Alur izin berjalan, tanpa membuat rekaman absensi guru.                                |
 | U11    | Editor menambah submenu website              | Menu tampil di publik; urutan dan visibilitas sesuai pengaturan CMS.                   |
 | U12    | Masa berlaku modul habis                     | Akses modul ditolak saat digunakan; data tidak dihapus.                                |
@@ -1123,7 +1105,7 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 |---|---|---|
 | PKL | `mitra_industri`, `periode_pkl`, `penempatan_pkl`, `jurnal_pkl`, `kehadiran_pkl`, `penilaian_pkl` | Nilai industri diinput guru dari kertas, penilai dan tanggal dicatat; berkas bukti opsional. |
 | Jurnal Mengajar | `jurnal_mengajar` | Referensi guru/kelas; jadwal dijadikan pilihan jika modul Jadwal aktif. |
-| Absensi + Izin | `kehadiran_siswa`, `pengajuan_izin_siswa`, `pengajuan_izin_pegawai` | `kehadiran_siswa` unik (`siswa_id`,`tanggal_kehadiran`) untuk absensi harian; **tanpa** tabel absensi guru. |
+| Absensi + Izin | `sesi_pelajaran`, `kehadiran_siswa`, `tindak_lanjut_presensi`, `pengajuan_izin_siswa`, `pengajuan_izin_pegawai` | `sesi_pelajaran` unik (`kelas_id`, `tanggal`, `jam_ke`); `kehadiran_siswa` unik (`sesi_pelajaran_id`, `siswa_id`) untuk setiap jam; **tanpa** tabel absensi guru. |
 | Surat | `surat`, `templat_surat` | Mode `metadata`, `editor`, atau `upload`; path file nullable. Penomoran final unik sesuai tahun/jenis. |
 | BKK | `lowongan_kerja`, `lamaran_kerja` | Lamaran menunjuk `profil_alumni.id` atau siswa tingkat akhir yang sah. |
 | BK | `kasus_konseling`, `sesi_konseling` | Catatan rahasia terpisah dan izin sangat terbatas. |
@@ -1134,7 +1116,15 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 | Poin pelanggaran | `aturan_pelanggaran`, `catatan_pelanggaran`, `tindak_lanjut_pelanggaran` | Poin berlaku sesudah validasi; koreksi mempunyai audit. |
 | Website | `halaman_website`, `artikel_website`, `menu_website`, `media_website` | Menu dinamis dengan `induk_id` nullable, urutan, tujuan halaman/URL, status tampil. |
 
-**Aturan izin–absensi:** izin siswa yang disetujui harus diperhitungkan dalam absensi tanggal yang sama, bukan membuat dua status aktif. Jika absensi sudah dicatat `Alpa` dan izin disetujui kemudian, proses menyelaraskan status disertai audit. Izin guru hanya dicatat di `pengajuan_izin_pegawai`, **tanpa** membuat absensi guru.
+**Struktur presensi per jam:**
+
+| Tabel | Kolom pokok | Aturan |
+|---|---|---|
+| `sesi_pelajaran` | `id`, `kelas_id`, `tanggal`, `jam_ke`, `mata_pelajaran_id`, `guru_id`, `waktu_mulai`, `waktu_selesai`, `jadwal_pelajaran_id` nullable | UNIQUE (`kelas_id`, `tanggal`, `jam_ke`); validasi guru/mapel, waktu dan penugasan. Data sesi historis tidak ditimpa perubahan jadwal. |
+| `kehadiran_siswa` | `id`, `sesi_pelajaran_id`, `siswa_id`, `penempatan_kelas_siswa_id`, `status_kehadiran`, `status_pemeriksaan`, `catatan`, `dikirim_pada`, `dikonfirmasi_oleh` nullable, `dikonfirmasi_pada` nullable | UNIQUE (`sesi_pelajaran_id`, `siswa_id`); siswa sesuai penempatan saat sesi. Koreksi membatalkan konfirmasi lama dengan jejak audit, lalu minta konfirmasi ulang. |
+| `tindak_lanjut_presensi` | `id`, `siswa_id`, `tanggal`, `wali_kelas_id`, `guru_bk_id`, `ringkasan_masalah`, `tindakan`, `status`, `hasil` nullable | Kolaborasi wali kelas/BK sesuai penugasan; bukan tempat catatan rahasia konseling. Referensi presensi terkait harus dapat ditelusuri. |
+
+**Aturan izin–presensi:** pengajuan izin siswa memuat waktu mulai/selesai. Izin yang disetujui diselaraskan ke sesi yang dicakup, termasuk sesi yang baru dibuat kemudian, tanpa menduplikasi presensi atau menimpa jam di luar izin. Bila bertentangan dengan catatan hadir, minta klarifikasi guru/wali kelas, jangan mengubah diam-diam. Perubahan setelah konfirmasi memerlukan audit dan konfirmasi ulang. Izin guru hanya dicatat di `pengajuan_izin_pegawai`, tanpa presensi guru.
 
 ## 12.7 Proses massal: progres nyata dan keamanan idempotensi
 
@@ -1163,7 +1153,7 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 5. Foreign key/tagihan selalu menunjuk `siswa.id` lama; snapshot nominal dan kelas tagihan tak berubah karena kenaikan/kelulusan.
 6. Pembayaran tidak boleh melebihi sisa tagihan; transaksi dibatalkan/dikoreksi melalui audit, bukan dihapus.
 7. Unique kode aset; stok lab tidak negatif; satu aset tidak dipinjam aktif oleh dua pihak.
-8. Unique absensi siswa/tanggal untuk tipe absensi harian; izin disetujui tidak berbenturan dengan absensi.
+8. UNIQUE sesi kelas/tanggal/jam dan UNIQUE presensi siswa/sesi; satu siswa tidak boleh tercatat di dua sesi yang waktunya bertabrakan. Status izin hanya berlaku pada jam yang dicakup; konfirmasi wali kelas terpisah dari status hadir.
 9. Unique item per operasi massal dan kunci bisnis untuk tagihan massal, agar retry tidak menduplikasi.
 10. Foreign key dengan `RESTRICT`/perlakuan aman untuk histori siswa, alumni, transaksi, dan aset; data sensitif tidak dihapus berantai.
 
@@ -1194,14 +1184,14 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 |---|---|---|---|---|
 | 01 PKL | Koordinator (penempatan), siswa (jurnal sendiri), guru pembimbing (nilai kertas) | Guru pembimbing/koordinator | Koordinator, Waka HUBIN | Siswa: dirinya; guru: siswa binaan. Tidak ada akun industri. |
 | 02 Jurnal | Guru pengampu | Waka Kurikulum (jika sekolah memakai pemeriksaan) | Waka Kurikulum, Kepala Sekolah | Guru hanya jurnal sendiri; pengawas sesuai bidang. |
-| 03 Absensi + Izin | Guru piket/ditugaskan (absensi); siswa/orang tua (izin siswa); guru (izin diri) | Petugas izin sesuai alur sekolah | Wali Kelas, Waka Kesiswaan, Admin berizin | Per kelas/anak/diri sendiri; **tidak ada absensi guru**. |
+| 03 Absensi + Izin | Guru mapel: presensi tiap jam; siswa/wali: izin; wali kelas dan BK: tindak lanjut | Wali kelas: konfirmasi presensi; pejabat berwenang: izin | Wali kelas/BK sesuai penugasan, pimpinan agregat | Guru hanya sesi pengajarannya; wali kelas hanya kelas binaan; konseling privat terpisah. |
 | 04 Surat | Tata Usaha | Kepala Sekolah/pejabat penandatangan untuk surat tertentu | Tata Usaha, Kepala Sekolah | Arsip/dokumen sesuai tugas; file boleh kosong. |
 | 05 Keuangan | Bendahara | Bendahara berizin untuk koreksi/void | Bendahara, Kepala Sekolah (ringkasan) | Siswa/orang tua hanya tagihannya sendiri; Owner bukan bendahara. |
-| 06 BKK | Petugas BKK (lowongan/status), alumni (lamaran sendiri) | Petugas BKK (validasi lowongan/akun alumni) | Petugas BKK | Alumni hanya lamaran/profil sendiri; perusahaan belum perlu akun. |
+| 06 BKK | Pengelola Alumni (lowongan/status), alumni (lamaran sendiri) | Pengelola Alumni (validasi lowongan/akun alumni) | Pengelola Alumni | Alumni hanya lamaran/profil sendiri; perusahaan belum perlu akun. |
 | 07 Sarpras | Petugas Sarpras; guru/staf (ajukan pinjam) | Petugas Sarpras | Petugas, Waka Sarpras | Unit/lokasi aset yang dikelola. |
 | 08 BK | Guru BK (catatan), siswa (permohonan) | Guru BK untuk penanganan | Guru BK, pimpinan hanya angka agregat | Catatan rahasia per kasus; tidak otomatis terlihat oleh Admin/Owner. |
 | 09 Jadwal | Waka Kurikulum/petugas penjadwalan | Waka Kurikulum (publikasi) | Guru, siswa, pimpinan | Guru/siswa hanya jadwal relevan; versi draft dibatasi. |
-| 10 Tracer | Alumni (riwayat/jawaban sendiri), petugas tracer (form/periode) | Petugas Tracer (verifikasi akun) | Petugas Tracer, pimpinan (agregat) | Data pernikahan privat dan tidak masuk laporan umum. |
+| 10 Tracer | Alumni (riwayat/jawaban sendiri), Pengelola Alumni (form/periode) | Pengelola Alumni (verifikasi akun) | Pengelola Alumni, pimpinan (agregat) | Data pernikahan privat dan tidak masuk laporan umum. |
 | 11 HUBIN | Staf/Waka HUBIN | Waka HUBIN/pejabat berwenang | HUBIN, Kepala Sekolah | Dokumen kerja sama sesuai penugasan. |
 | 12 Supervisi | Supervisor | Kepala Sekolah (hasil akhir bila diperlukan) | Guru (hasil sendiri), Kepala Sekolah | Hasil supervisi guru lain tidak terbuka untuk semua guru. |
 | 13 Lab/Bengkel | Kepala/Petugas Lab (stok), guru praktik (pinjam) | Petugas/Kepala Lab | Kepala Lab, Waka Sarpras | Lokasi lab yang ditugaskan; aset dari master Sarpras bersama. |
@@ -1212,7 +1202,7 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 
 - **Wajib approval:** pencatatan poin sebelum berlaku, pengajuan izin, koreksi transaksi keuangan yang sudah sah, dan surat yang sekolah tetapkan membutuhkan persetujuan.
 - **Tidak perlu approval berlapis:** jurnal guru standar, konten yang diterbitkan Editor berwenang, pembaruan profil sendiri, dan data operasional biasa (kecuali kebijakan sekolah mengharuskan).
-- **Alumni lama:** mendaftar mandiri → status pending → petugas BKK/Tracer memverifikasi → baru mendapat akses alumni. Tidak ada klaim otomatis berdasarkan NIS/NISN.
+- **Alumni lama:** mendaftar mandiri → status pending → Pengelola Alumni memverifikasi → baru mendapat akses alumni. Tidak ada klaim otomatis berdasarkan NIS/NISN.
 
 ## 13.3 Bentuk permission yang diterapkan di Laravel
 
@@ -1449,6 +1439,8 @@ Bab 12 mendeskripsikan tabel utama; migration nyata harus mempertahankan aturan 
 | `tagihan` | FK siswa, tarif snapshot, `UNIQUE(siswa_id, jenis_biaya_id, kunci_periode)` dengan kunci_periode yang membedakan tahun/periode | Tagihan tidak dibuat dua kali |
 | `pembayaran` | FK tagihan, `UNIQUE(nomor_kuitansi)`; transaksi tagihan terkunci sebelum menambah pembayaran | Tidak overpayment atau kuitansi ganda |
 | `aset` | Identitas aset unit unik; Lab merujuk `aset.id` yang sama; bukan tabel aset duplikat | Sarpras dan Lab konsisten |
+| `sesi_pelajaran` | FK kelas/mapel/guru, UNIQUE (`kelas_id`, `tanggal`, `jam_ke`); waktu sesi tidak bertabrakan untuk kelas sama | Satu sesi sah per jam kelas, jadwal opsional |
+| `kehadiran_siswa` | FK sesi/siswa/penempatan; UNIQUE (`sesi_pelajaran_id`, `siswa_id`); konfirmasi hanya wali kelas binaan | Presensi per jam tidak tertimpa; koreksi diaudit dan dikonfirmasi ulang |
 | `item_operasi_massal` | `UNIQUE(operasi_id, kunci_entitas)`; item bersifat idempotent | Retry/dua tab tidak menggandakan mutasi |
 | `peran_pengguna`, `hak_akses_peran` | UNIQUE pasangan masing-masing FK | Peran/hak tidak terpasang berkali-kali |
 
