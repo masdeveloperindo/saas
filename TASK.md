@@ -6,7 +6,7 @@
 > Gunakan checkout yang sudah ada; setiap tugas cloud sudah terisolasi dan tidak memerlukan Git worktree baru.
 
 
-**Versi:** 1.4 (App-Only, selaras PRD 4.6) · **Status:** Belum dimulai (semua kotak tugas masih kosong)
+**Versi:** 1.5 (App-Only, selaras PRD 4.7) · **Status:** Belum dimulai (semua kotak tugas masih kosong)
 **Acuan utama:** [`PRD.md`](PRD.md)  
 **Instruksi coding:** bagian Panduan implementasi dalam dokumen ini  
 **Referensi UI:** [`prototype/index.html`](prototype/index.html) dan prototipe HTML lainnya.
@@ -41,13 +41,25 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 - [ ] K0.06 Tinjau struktur folder, metode singkat, penamaan jelas, penghindaran duplikasi/N+1 dan format Pint; tidak membuat lapisan generik yang belum dibutuhkan.
 - [ ] K1.07 Terapkan tabel/kolom bisnis Bahasa Indonesia sesuai PRD; Model menetapkan tabel/FK eksplisit dan autentikasi `Pengguna` tetap kompatibel Laravel. Uji migration, relasi, constraint dan transaksi MariaDB.
-- [ ] K2.09 Terapkan 13 role inti PRD §4.2/13; gabungkan pengelolaan BKK/Tracer dalam Pengelola Alumni dan jabatan lain sebagai penugasan, bukan role baru; uji rangkap role, lingkup penugasan, larangan eskalasi owner, persetujuan izin oleh pejabat selain pengaju dan privasi laporan.
+- [ ] K2.09 Terapkan 13 role inti PRD §4.2/13; gabungkan pengelolaan BKK/Tracer dalam Pengelola Alumni dan jabatan lain sebagai penugasan, bukan role baru; uji rangkap role, lingkup penugasan, larangan eskalasi owner, S/I siswa langsung dari wali kelas; persetujuan pejabat hanya untuk izin guru sendiri dan privasi laporan.
 - [ ] F0.11 Siapkan locale `id`, `lang="id"` dan terjemahan Indonesia untuk UI, autentikasi, validasi, pesan framework/paket, laporan serta teks aksesibilitas. Format tanggal/angka Indonesia dan Rupiah.
 - [ ] F7.13 Uji seluruh layar/alur rilis dalam Bahasa Indonesia termasuk error/validasi/reset sandi, modal, laporan/cetak dan tampilan mobile; kode status internal tidak tampil mentah.
 
 **Acuan tabel bisnis:** `siswa`, `tahun_ajaran`, `kepesertaan_siswa`, `penempatan_kelas_siswa`, `profil_alumni`, `tagihan`, `pembayaran`, `operasi_massal`, dan `item_operasi_massal`; rincian tabel/kolom lain mengikuti PRD Bab 12. Jangan membuat tabel paralel dengan nama Inggris.
 
-**Acuan fitur dan navigasi:** PRD §4.3 memuat daftar fitur dan §4.4 memuat menu/submenu, isi layar, tindakan dan batas akses 13 role. Tidak menambah modul atau role. Kewajiban jurnal guru berlaku pada hari mengajar dan modul aktif; izin wali bisa dicatat dari luar aplikasi tanpa akun wali.
+**Acuan fitur dan navigasi:** PRD §4.3 memuat daftar fitur dan §4.4 memuat menu/submenu, isi layar, tindakan dan batas akses 13 role. Tidak menambah modul atau role. Jurnal guru berisi kegiatan/hasil harian saat modul aktif, tidak bergantung jadwal/kalender; izin wali bisa dicatat dari luar aplikasi tanpa akun wali.
+
+## Keputusan operasional dan kontrak rilis terbaru
+
+PRD modul 02/03, §4.2.2, Bab 10, §13.5 dan §14.6 adalah acuan: jurnal kegiatan/hasil harian, presensi hari ini satu kelas atomik, S/I wali langsung, konfirmasi tanpa batas waktu, tanpa kalender akademik, 13 role dengan penugasan rinci, rilis R1–R4 serta upgrade aman. Kalender/libur bukan prasyarat input. Transaksi per item berlaku pada operasi massal; transaksi seluruh daftar berlaku pada kirim presensi kelas, jangan dicampur.
+
+- [ ] F1.12 Implementasikan penugasan mengajar/wali/BK/bidang/unit dan delegasi dengan FK, rentang tanggal, lingkup, audit dan konflik; uji pergantian/pencabutan dan akses historis PRD §4.2.2.
+- [ ] F5.17 Implementasikan penyimpanan kelas atomik beserta `pengiriman_presensi`, token idempotensi, versi sesi/daftar/izin, validasi himpunan siswa, bukti jumlah tersimpan dan endpoint periksa hasil; bukan request per siswa dan bukan bulk item engine.
+- [ ] F5.18 Implementasikan 5 tema publik klasik/modern/vokasi/berita/kreatif, satu admin layout, CMS/menu bersama, pratinjau terotorisasi, allowlist/fallback, penyimpanan pilihan dan ganti tema tanpa kehilangan data.
+- [ ] F7.17 Uji toggle/expiry modul saat form terbuka/transaksi/bulk berjalan, dua tab, arsip, aktif ulang dan seluruh pasangan mandiri PRD §13.5; Core/fitur lain tidak error, tidak ada partial commit atau bypass cache.
+- [ ] F7.18 Uji kelima tema desktop/HP/keyboard, menu/submenu, berita/detail, halaman statis, kosong/error, fallback tema invalid dan admin tidak berubah.
+- [ ] F8.11 Uji upgrade dari rilis sebelumnya, bukan hanya fresh install: semua data historis, lisensi aktif/nonaktif, penugasan, tema/media, token transaksi tetap konsisten; uji payload tab lama, cache baru, rollback kompatibel dan simulasi migration gagal.
+- [ ] F9.07 Catat rilis target R1/R2/R3/R4, minimum versi upgrade, modul layak jual, bukti UAT dan risiko. R1 hanya Core + Absensi/Izin + Jurnal Kegiatan; modul lain tidak diaktifkan sebelum lulus.
 
 ## K — Kontrak routing, database dan keamanan aplikasi (wajib sebelum coding modul)
 
@@ -161,7 +173,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F3.02 Profil pelanggan **satu sekolah** pada VPS tersebut; tidak ada katalog banyak tenant di instalasi.
 - [ ] F3.03 Seed 15 modul dengan kode stabil; modul yang tidak aktif tidak muncul di menu.
 - [ ] F3.04 Aktivasi/nonaktifkan modul, masa berlaku, catatan perpanjangan, dan pencatatan pembayaran langganan manual.
-- [ ] F3.05 Middleware dan otorisasi objek memblokir akses URL, aksi Livewire, ekspor, unggah, dan endpoint massal modul tidak aktif.
+- [ ] F3.05 Blokir mutasi/fitur operasional modul nonaktif; arsip baca/ekspor dan bukti pengiriman Core tetap sesuai hak. Terapkan lock/versi lisensi dan invalidasi cache sesuai PRD §13.5, tanpa 500 atau mengganggu modul lain.
 - [ ] F3.06 Saat modul kedaluwarsa: operasi modul diblokir, **data tidak dihapus**; akses core dan prosedur ekspor/retensi tetap tersedia sesuai kebijakan.
 - [ ] F3.07 Owner **tidak otomatis** dapat membaca data BK, informasi keluarga, pembayaran personal, dan data sensitif sekolah.
 - [ ] F3.08 Audit setiap perubahan lisensi/modul/pembayaran owner; tes role bypass dan akses URL langsung.
@@ -189,9 +201,9 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 ---
 
-## F5 — Modul aplikasi (15 produk, kerjakan berurutan)
+## F5 — Modul aplikasi (15 produk, prioritas rilis R1–R4)
 
-**Acuan cakupan:** setiap baris F5 wajib memenuhi seluruh fitur inti, proses bisnis, status, keluaran, dan aturan penting modul terkait pada PRD Bab 7; ringkasan tabel bukan pengganti rincian PRD. QR aset adalah opsional, bukan syarat MVP. Nomor urutan F5 adalah urutan pengerjaan, bukan nomor katalog produk PRD; kode modul adalah identitas tetap.
+**Acuan cakupan:** setiap baris F5 wajib memenuhi seluruh fitur inti, proses bisnis, status, keluaran, dan aturan penting modul terkait pada PRD Bab 7; ringkasan tabel bukan pengganti rincian PRD. QR aset adalah opsional, bukan syarat MVP. Nomor F5 adalah ID tugas tetap; urutan pengerjaan mengikuti rilis R1–R4 pada PRD Bab 10, bukan urutan tabel; kode modul adalah identitas tetap.
 
 **Syarat untuk setiap modul:** migrasi + validasi + role/permission + pemeriksaan lisensi + UI loading/modal + laporan bila dibutuhkan + pengujian proses utama. Modul harus berfungsi sendiri; integrasi PRD Bab 8 **wajib saat kedua modul terkait aktif**; saat pasangan tidak aktif, modul tetap berjalan dengan data minimum Core tanpa menduplikasi master bersama.
 
@@ -199,10 +211,10 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 |---|---|---|---|---|
 | 01 | `website` | CMS halaman, berita, pengumuman, galeri, profil jurusan, **menu/submenu dinamis** (urut/sembunyi/URL) | Editor buat → preview → terbit → pengunjung lihat | `12-website.html` |
 | 02 | `surat` | Surat masuk/keluar, nomor unik, template, arsip; **file opsional** (catat metadata/editor/upload) | TU buat/catat → persetujuan seperlunya → arsip | `10-surat.html` |
-| 03 | `absensi_izin` | **Presensi siswa per jam pelajaran**, konfirmasi wali kelas, penanganan bersama BK, izin siswa/guru dan penyelarasan per jam | Guru mapel presensi tiap jam → wali kelas konfirmasi → wali kelas bersama BK tindak lanjut; izin sesuai pejabat berwenang | `08-absensi.html` |
+| 03 | `absensi_izin` | **Presensi siswa per jam pelajaran**, konfirmasi wali kelas, penanganan bersama BK, izin siswa/guru dan penyelarasan per jam | Guru mapel simpan seluruh kelas hari ini → wali kelas konfirmasi tanpa tenggat → tindak lanjut bersama BK; S/I langsung dari wali kelas | `08-absensi.html` |
 | 04 | `pelanggaran` | Tata tertib, bobot, catat, validasi, pembinaan, keberatan | Guru catat → Kesiswaan validasi → BK tindak lanjut | `13-pelanggaran.html` |
 | 05 | `pkl` | Mitra, penempatan, jurnal, absensi, monitoring, nilai industri **diinput guru dari kertas** | Koordinator tempatkan → siswa jurnal → guru pantau/input nilai → laporan | `07-pkl.html` |
-| 06 | `jurnal_guru` | Jurnal harian wajib setiap pertemuan mengajar, draf/kirim/koreksi, monitoring kelengkapan, rekap | Guru isi → Waka monitor | `14-modul-lain.html` |
+| 06 | `jurnal_guru` | Kegiatan dan hasil pekerjaan harian guru, draf/kirim/koreksi, riwayat dan rekap | Guru tulis kegiatan dan hasil → Kirim → Pimpinan lihat | `14-modul-lain.html` |
 | 07 | `jadwal` | Hari/jam, pembagian guru, jadwal kelas, deteksi bentrok, cetak | Waka susun → cek bentrok → terbit | `14-modul-lain.html` |
 | 08 | `bk` | Konseling, jadwal, tindak lanjut, statistik tanpa mengumbar rahasia | Guru BK tangani → tindak lanjut → rekap terbatas | `14-modul-lain.html` |
 | 09 | `keuangan` | Tarif, tagihan, cicilan, kuitansi, tunggakan, koreksi/void ber-audit | Bendahara terbitkan → terima/catat → laporan | `09-keuangan.html` |
@@ -246,7 +258,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F5.03 `absensi_izin` — tabel `sesi_pelajaran`, `kehadiran_siswa` dan `tindak_lanjut_presensi` sesuai PRD §12.6, sesi per jam, input guru mapel, konfirmasi wali kelas, penanganan bersama BK, rekap dan izin per rentang waktu; UI/backend/otorisasi dan tes selesai, tanpa presensi guru.
 - [ ] F5.04 `pelanggaran` — UI + backend + role + test selesai (validasi sebelum poin final).
 - [ ] F5.05 `pkl` — UI + backend + role + test selesai (**tanpa akun industri**).
-- [ ] F5.06 `jurnal_guru` — jurnal harian wajib per pertemuan, field materi/kegiatan/refleksi, draf/kirim/koreksi, monitoring sudah/belum diisi dan rekap; uji penugasan, duplikasi dan independensi dari Jadwal/Absensi sesuai PRD Bab 7 modul 02.
+- [ ] F5.06 Jurnal kegiatan guru: `jurnal_kegiatan_guru` + `rincian_jurnal_guru`, kegiatan/hasil wajib, satu jurnal per guru/hari, kelas/jam/mapel opsional; tanpa ketergantungan jadwal/presensi/kalender. Draf/kirim/koreksi dan rekap sesuai PRD modul 02.
 - [ ] F5.07 `jadwal` — UI + backend + role + test selesai (tanpa generator rumit).
 - [ ] F5.08 `bk` — UI + backend + role + test selesai (data rahasia dibatasi).
 - [ ] F5.09 `keuangan` — UI + backend + role + test selesai (histori tagihan aman).
@@ -256,7 +268,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F5.13 `bkk` — lowongan, lamaran/CV opsional, status seleksi dan laporan; gunakan registrasi/profil alumni F2, uji BKK aktif tanpa Tracer/Website.
 - [ ] F5.14 `tracer` — periode/form survei, snapshot jawaban historis dan laporan agregat; aktivitas alumni paralel; uji Tracer aktif tanpa BKK/Website dan perubahan profil tidak menimpa jawaban lama.
 - [ ] F5.15 `supervisi` — UI + backend + role + test selesai.
-- [ ] F5.16 Implementasikan pencatatan izin wali di luar aplikasi (telepon/WhatsApp/surat/tatap muka), identitas/kanal/waktu pelapor, lampiran opsional dan keputusan pejabat terpisah; tidak mewajibkan akun wali atau integrasi WhatsApp (PRD Bab 7 modul 03 dan §12.6).
+- [ ] F5.16 Izin siswa S/I dari wali kelas langsung berlaku tanpa pejabat kedua; sumber telepon/WhatsApp/surat/tatap muka, tanpa wajib akun/lampiran; radio presensi otomatis, konflik versi ditolak utuh. Izin guru tetap persetujuan pejabat.
 
 ## F6 — Integrasi data lintas modul
 
@@ -267,11 +279,13 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F6.03 **Sarpras ↔ Laboratorium:** satu `aset.id` untuk aset unit yang sama, perubahan kondisi/lokasi muncul di dua modul.
 - [ ] F6.04 **Absensi ↔ Izin:** izin siswa diselaraskan hanya ke sesi/jam dalam rentang izin; perubahan sesudah konfirmasi diaudit dan meminta konfirmasi ulang wali kelas.
 - [ ] F6.05 **PKL ↔ HUBIN:** satu tabel mitra industri; data perusahaan yang sama tidak diduplikasi.
-- [ ] F6.06 **Jurnal Mengajar ↔ Jadwal:** jadwal otomatis menjadi pilihan bila modul jadwal aktif, bukan syarat wajib jurnal.
+- [ ] F6.06 **Jurnal Kegiatan Guru ↔ Presensi/Jadwal:** tidak saling menjadi syarat; jurnal kegiatan/hasil harian bukan jurnal pertemuan. Presensi memakai penugasan mengajar, jadwal hanya saran.
 - [ ] F6.07 **Pelanggaran ↔ BK:** hanya rujukan tindak lanjut minimal; isi konseling tidak bocor ke pelapor.
 - [ ] F6.08 **Website ↔ lisensi:** jika website tidak aktif, admin sekolah tetap bisa login ke aplikasi melalui domain sekolah.
 
 **Selesai jika:** menonaktifkan modul pasangan tidak menimbulkan error pada modul yang masih aktif.
+
+**Skenario penerimaan terbaru:** OP01–OP13 pada PRD §14.7 wajib diuji sesuai rilis. Prototipe tema bukan bukti CMS produksi selesai.
 
 ## F7 — QA, keamanan, performa dan aksesibilitas
 
@@ -292,9 +306,9 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 **Selesai jika:** tidak ada bug kritis/tinggi terbuka; tes kritis lulus; pengguna bisa menyelesaikan alur utama tanpa instruksi teknis.
 
-- [ ] F7.14 Uji guru mapel mengisi tiap jam hanya pada sesi ditugaskan; siswa sama bisa Hadir pada jam pertama dan Alpa pada jam berikutnya tanpa tertimpa. Wali kelas lain ditolak mengonfirmasi; koreksi meminta konfirmasi ulang; sesi kosong bukan Alpa; izin parsial tidak mengubah jam lain; wali kelas dan BK menindaklanjuti tanpa membocorkan konseling. Uji alur saat modul Jadwal/BK tidak aktif.
+- [ ] F7.14 Uji presensi hari ini dari server Jakarta tanpa pemilih tanggal, semua H awal belum tersimpan, otomatis S/I wali kelas, kirim seluruh kelas satu transaksi; satu baris gagal rollback semua. Uji payload kurang/duplikat/tambahan, timeout setelah commit, retry token sama, dua tab, izin berubah, pergantian hari dan tidak ada sukses palsu. Konfirmasi wali kelas tanpa tenggat; koreksi lampau khusus wali/delegasi; alur BK lengkap tanpa bocor konseling.
 
-- [ ] F7.15 Uji jurnal setiap pertemuan mengajar: draf belum selesai, kirim tanpa field wajib ditolak, guru lain ditolak, koreksi ber-audit, hari tidak mengajar bukan kekurangan, satu jurnal beberapa jam tidak menggabungkan presensi per jam; modul tetap berlisensi.
+- [ ] F7.15 Uji jurnal kegiatan nonmengajar tanpa kelas/mapel/jadwal; kegiatan dan hasil wajib, beberapa rincian dalam satu hari, draf bukan terkirim, guru lain ditolak, tanggal lampau diizinkan untuk jurnal saja; tidak ada hitungan pelanggaran kalender.
 - [ ] F7.16 Uji menu tiap role/penugasan sesuai PRD §4.4, lisensi aktif/nonaktif, gabungan role tanpa duplikasi, akses URL langsung dan ekspor; wali tanpa akun tetap dapat menyampaikan izin melalui petugas dan menjalani keputusan sah.
 
 ## F8 — Validasi rilis aplikasi (infrastruktur terpisah)
@@ -307,7 +321,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F8.04 Dokumentasikan aset data aplikasi yang harus dicakup backup (MariaDB dan file privat), serta pemeriksaan konsistensi aplikasi usai restore oleh operator; **tanpa menulis skrip backup host**.
 - [ ] F8.05 Setelah tim infrastruktur memulihkan salinan data uji, jalankan smoke test integritas siswa, keuangan, file privat, dan hak akses dari sisi aplikasi.
 - [ ] F8.06 Siapkan log error aplikasi yang aman dan panduan pemeriksaan error Laravel. Monitoring infrastruktur ditangani terpisah.
-- [ ] F8.07 Siapkan prosedur update versi, rollback kode/database yang aman, dan penanganan insiden.
+- [ ] F8.07 Terapkan kontrak upgrade PRD §14.6: tag/versi aplikasi-skema-runtime, migration additive, uji rilis lama→baru, data/lisensi/tema utuh, rollback source kompatibel atau perbaikan maju; tidak reset database sekolah.
 - [ ] F8.08 Jalankan uji coba **satu sekolah** dan verifikasi akses aplikasi melalui URL yang tersedia, akun, lisensi, data, hak akses, serta laporan.
 - [ ] F8.09 Tetapkan rilis hanya untuk **modul yang telah lulus QA**; yang belum selesai tidak boleh ditawarkan/diaktifkan.
 - [ ] F8.10 Dokumentasikan hasil akhir, migrasi, panduan admin, panduan owner, dan catatan rilis.
@@ -465,7 +479,7 @@ Kamu adalah software engineer senior Laravel, perancang database, dan QA enginee
 ### 2. Daftar modul (kode stabil, bukan nomor lisensi yang dapat berubah)
 
 1. `pkl` — Manajemen PKL
-2. `jurnal_guru` — Jurnal Mengajar Guru
+2. `jurnal_guru` — Jurnal Kegiatan Harian Guru
 3. `absensi_izin` — Absensi Siswa & Perizinan Siswa/Guru
 4. `surat` — Administrasi Surat Digital
 5. `keuangan` — Keuangan & SPP
@@ -538,7 +552,7 @@ Berlaku untuk impor siswa, penempatan kelas, promosi, kelulusan, tagihan massal,
 3. **F4 lalu F1.07:** bangun dan uji mesin massal, kemudian integrasikan impor. Jangan menunggu impor selesai untuk membangun F4.
 4. **F2:** siklus siswa, kenaikan/kelulusan, alumni dan registrasi/verifikasi; F2.14 menyiapkan model tagihan/pembayaran dan tes historis.
 5. **Selesaikan F3:** owner, MFA, lisensi lokal dan pembayaran langganan manual.
-6. **F5/F6:** implementasikan 15 modul bertahap menurut tabel F5 serta integrasi pasangan yang sudah ada. Keuangan lengkap berada di F5.09.
+6. **F5/F6:** ikuti R1–R4 PRD Bab 10; dahulukan F5.03/F5.06, modul lain bertahap serta integrasi pasangan yang sudah ada. Keuangan lengkap berada di F5.09.
 7. **F7 → F8/F9 + K3:** QA, keamanan, UAT, bukti rilis dan handover aplikasi; infrastruktur dikelola terpisah.
 
 **Untuk setiap fase**:
@@ -557,7 +571,7 @@ Harus diuji, sekurang-kurangnya:
 - Alumni lama mendaftar sendiri dan diverifikasi; mencegah klaim data orang lain; kerja + kuliah secara bersamaan.
 - Perpindahan kelas/lulus tidak mengubah nominal kelas snapshot tagihan; tunggakan tetap tercatat; dua pembayaran paralel tidak menyebabkan kelebihan bayar.
 - Master aset sama terbaca di Sarpras dan Lab; stok bahan tidak negatif saat ada transaksi bersamaan.
-- Izin siswa konsisten dengan absensi; tidak ada absensi guru; surat bisa disimpan tanpa file.
+- S/I wali kelas langsung konsisten dengan presensi; tidak ada absensi guru; surat bisa disimpan tanpa file.
 - Menu website benar-benar dinamis; input nilai PKL oleh guru dari kertas.
 - Role tanpa hak akses ditolak di UI **dan di backend**; modul kedaluwarsa tidak bisa dipakai; file privat tidak dapat diunduh tanpa izin.
 - Batch 600 siswa dengan paralel terbatas, progress sesuai commit DB, modal hasil/failed/retry, browser tertutup/koneksi putus, resume tanpa duplikasi.
@@ -674,12 +688,12 @@ Gerbang modul dan integrasi diuji sesuai cakupan rilis yang dicatat; modul di lu
 **Pemeriksaan integrasi kritis:**
 
 - [ ] C01 PKL: nilai industri dari lembar kertas diinput guru; tidak perlu akun industri; bukti file opsional.
-- [ ] C02 Guru mapel mencatat presensi siswa per jam, wali kelas mengonfirmasi, wali kelas dan BK menindaklanjuti; izin siswa/guru dalam satu modul, tanpa presensi guru.
+- [ ] C02 Guru menyimpan semua siswa per sesi hari ini secara atomik; S/I langsung dari wali kelas, konfirmasi tanpa tenggat dan alur penanganan BK; izin siswa/guru dalam satu modul, tanpa presensi guru.
 - [ ] C03 Surat bisa dicatat/disimpan tanpa file dan tetap bisa dibuat/upload dokumen bila dibutuhkan.
 - [ ] C04 Sarpras dan Lab memakai `aset.id` sama; stok bahan pakai tidak negatif; peminjaman unit tidak ganda.
 - [ ] C05 Hubin–PKL dan BKK–Tracer berbagi master data, tidak ada identitas perusahaan/alumni ganda.
 - [ ] C06 CMS: menu/submenu dinamis, urutan, status tampil, URL internal/eksternal, perlindungan dari HTML/script berbahaya.
-- [ ] C07 Modul nonaktif/expired tersembunyi **dan** ditolak di URL/action/export; data tidak terhapus.
+- [ ] C07 Modul nonaktif/expired menolak mutasi operasional tanpa 500; Core/modul lain tetap berjalan, arsip baca/ekspor sesuai hak, data tidak terhapus, aktif ulang aman (PRD §13.5).
 
 ## 5. Gerbang D — Keamanan aplikasi (BLOCKER)
 
@@ -772,3 +786,11 @@ Gerbang modul dan integrasi diuji sesuai cakupan rilis yang dicatat; modul di lu
 - **Hambatan/risiko:**
 - **Commit atau PR:**
 - **Tugas berikutnya:**
+
+## Bukti revisi spesifikasi PRD 4.7 dan desain tema
+
+- Dokumen memuat jurnal kegiatan/hasil, presensi hari ini seluruh kelas atomik, S/I wali langsung, konfirmasi tanpa tenggat, model penugasan, rilis R1–R4, upgrade aman dan toggle modul terkontrol.
+- Lima desain publik mandiri tersedia melalui `prototype/index.html`; seluruh admin tetap satu desain.
+- Validasi aktual: 147 ID task unik, 13 role, 15 modul dalam R1–R4, OP01–OP13 tercantum, tautan lokal valid dan sintaks 33 blok JavaScript pada 20 HTML lulus.
+- Chromium/Playwright: kelima tema berhasil dimuat pada desktop 1440px dan mobile 390px, tidak melebar horizontal pada ukuran mobile tersebut, tombol menu membuka/menutup tanpa galat JavaScript.
+- Ini bukti pemeriksaan dokumen dan prototipe, **bukan** bukti transaksi MariaDB, toggle lisensi, CMS, penugasan atau upgrade Laravel telah diimplementasikan. Seluruh task aplikasi tetap belum dicentang; uji OP dan integrasi dijalankan setelah aplikasi tersedia.
