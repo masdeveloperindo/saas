@@ -110,7 +110,7 @@
 
 **Aturan aplikasi:** jangan hardcode domain atau IP, jangan simpan rahasia pada repository, sediakan `.env.example` tanpa kredensial, route memakai nama, dan uji pada lingkungan pengembangan/staging yang disediakan. Implementasi fitur tidak boleh bergantung pada Laravel Queue maupun Scheduler.
 
-**Acuan dokumen:** `task.md` (urutan eksekusi), `promt.md` (pedoman asisten coding), `GO_LIVE_CHECKLIST.md` (gerbang kualitas dan bukti UAT), `prototype/index.html` (referensi antarmuka, bukan implementasi backend).
+**Acuan dokumen:** `TASK.md` (urutan eksekusi), bagian Panduan implementasi (pedoman asisten coding), bagian Checklist kesiapan rilis aplikasi (gerbang kualitas dan bukti UAT), `prototype/index.html` (referensi antarmuka, bukan implementasi backend).
 
 # 4. Core system dan role
 
@@ -1429,7 +1429,7 @@ Gunakan `RESTRICT` atau strategi arsip/koreksi untuk relasi historis penting, bu
 | Deployment | Aset dibuild, migrasi diuji pada salinan, `APP_DEBUG=false`, dependensi dan permission aman |
 | UAT sekolah | Admin, TU, Waka, Guru, Bendahara, BK menuntaskan tugas yang relevan dengan modul rilis |
 
-**Status file:** ini adalah spesifikasi dan checklist, belum bukti aplikasi berhasil dibuat. Status *production ready* tidak boleh diberikan hanya karena PRD/`task.md` sudah lengkap.
+**Status file:** ini adalah spesifikasi dan checklist, belum bukti aplikasi berhasil dibuat. Status *production ready* tidak boleh diberikan hanya karena PRD/`TASK.md` sudah lengkap.
 
 
 # 18. Gerbang penyelesaian pekerjaan developer (App-Only)
@@ -1447,4 +1447,34 @@ PRD adalah spesifikasi, bukan bukti aplikasi berfungsi. Status **READY FOR APP H
 9. UAT Admin, Waka Kurikulum, Guru, TU, Bendahara, BK, dan BKK (sesuai modul rilis) lulus serta bug penghambat ditutup.
 10. Handover mencakup source/tag rilis, `.env.example` aman, dokumentasi setup **aplikasi saja**, daftar konfigurasi yang diperlukan dari operator, perintah migration/build aplikasi, hasil test, dan isu tersisa. Tidak ada konfigurasi domain/Nginx/SSL/VPS di dalam task developer.
 
-Detail bukti dan keputusan rilis ada di `GO_LIVE_CHECKLIST.md`. Status **GO LIVE** untuk sekolah hanya dapat diputuskan setelah tim infrastruktur menyatakan platform pendukung siap melalui proses terpisah.
+Detail bukti dan keputusan rilis ada di bagian Checklist kesiapan rilis aplikasi. Status **GO LIVE** untuk sekolah hanya dapat diputuskan setelah tim infrastruktur menyatakan platform pendukung siap melalui proses terpisah.
+
+
+---
+
+## Peta desain HTML
+
+Semua file di `prototype/` hanya merupakan desain dan simulasi antarmuka. CSS dan JavaScript tertanam di setiap HTML; tidak memerlukan build atau backend. Buka `prototype/index.html` untuk mulai. Panduan pengerjaan, checklist rilis, dan progres ada di `TASK.md`.
+
+
+HTML berikut adalah **simulasi frontend**, bukan aplikasi production. Data dan statusnya adalah contoh. Prioritas implementasi tetap `PRD.md`.
+
+| File HTML | Alur yang didemokan |
+|---|---|
+| `index.html` | Halaman indeks prototipe |
+| `01-owner.html` | Owner lokal, aktivasi modul, masa lisensi |
+| `02-dashboard.html` | Dashboard sekolah berdasarkan modul aktif |
+| `03-siswa.html` | Data induk siswa, pencarian |
+| `04-kenaikan.html` | Pilih massal, konfirmasi, progress |
+| `05-kelulusan.html` | Penetapan lulus, status alumni |
+| `06-alumni.html` | Pendaftaran alumni lama, verifikasi, riwayat |
+| `07-pkl.html` | Jurnal dan input nilai pembimbing industri melalui guru |
+| `08-absensi.html` | Absensi siswa dan izin siswa/guru |
+| `09-keuangan.html` | Tagihan, pembayaran, tunggakan |
+| `10-surat.html` | Surat dengan atau tanpa lampiran |
+| `11-sarpras.html` | Aset bersama Sarpras/Lab |
+| `12-website.html` | CMS dan menu dinamis |
+| `13-pelanggaran.html` | Poin kedisiplinan dan validasi |
+| `14-modul-lain.html` | Ringkasan modul lain |
+
+**Catatan:** prototipe HTML bukan pengganti Blade/Livewire, database, autentikasi, permission, atau unit test.
