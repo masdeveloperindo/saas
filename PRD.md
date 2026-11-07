@@ -19,7 +19,7 @@
 
 **Keputusan final.** Penilaian PKL ditranskripsi guru dari kertas; absensi guru dihapus; izin guru/siswa digabung dalam modul absensi siswa; surat boleh tanpa file; naik kelas dan lulus harus melalui konfirmasi admin; lulusan yang sudah tercatat memakai identitas siswa lama, sedangkan alumni lama dapat daftar sendiri tanpa dibuatkan siswa fiktif; Sarpras–Lab memakai satu master aset; menu website dikelola secara dinamis.
 
-**Definisi MVP.** Utamakan alur pokok, formulir singkat, hak akses jelas, modal konfirmasi yang konsisten, loading yang informatif, serta proses massal dengan progres dan pemulihan. **Spesifikasi teknis dan kriteria rilis ada pada Bab 12–17**. Tidak ada Queue, Laravel Scheduler, aplikasi pusat, panel multi-sekolah, atau integrasi pemerintah pada versi ini.
+**Definisi MVP.** Utamakan alur pokok, formulir singkat, hak akses jelas, modal konfirmasi yang konsisten, loading yang informatif, serta proses massal dengan progres dan pemulihan. **Spesifikasi teknis dan kriteria rilis ada pada Bab 12–18**. Tidak ada Queue, Laravel Scheduler, aplikasi pusat, panel multi-sekolah, atau integrasi pemerintah pada versi ini.
 
 # 1. Ringkasan keputusan produk
 
@@ -76,7 +76,7 @@
 |--------------------|------------------------------------------------------------------------------------------------------------|
 | Stack              | Laravel 13, PHP 8.5 FPM, Livewire 4, Blade, Tailwind CSS 4, Nginx, MariaDB.                                |
 | Instalasi          | 1 VPS milik 1 sekolah; 1 Laravel; 1 MariaDB; domain .sch.id sekolah.                                       |
-| Panel pemilik SaaS | /owner pada instalasi sekolah, dengan autentikasi dan MFA yang dianjurkan.                                 |
+| Panel pemilik SaaS | /owner pada instalasi sekolah, dengan autentikasi dan MFA wajib sebelum rilis produksi.                                 |
 | Panel operasional  | /admin; tampilan role dan aktivasi modul membatasi menu maupun API/aksi.                                   |
 | Lisensi            | Lokal pada database aplikasi. Tanggal kedaluwarsa diperiksa saat membuka/menjalankan modul.                |
 | Proses             | Form biasa sinkron; massal via batch kecil dan HTTP request paralel terbatas dari browser, tanpa Queue/Scheduler. |
@@ -366,7 +366,7 @@ Aturan proses yang harus diuji:
 
 ### 5.10.1 Alur registrasi / klaim akun alumni
 
-1. Jika **modul BKK atau Tracer Study aktif**, portal `/alumni/register` tersedia walaupun modul Website tidak aktif. Pendaftaran dibatasi agar tidak disalahgunakan.
+1. Jika **modul BKK atau Tracer Study aktif**, portal `/alumni/daftar` tersedia walaupun modul Website tidak aktif. Pendaftaran dibatasi agar tidak disalahgunakan.
 2. Alumni mengisi **nama lengkap, tahun lulus, jurusan saat lulus, email aktif, password**, dan **NIS jika ingat (opsional)**. Tanggal lahir atau informasi tambahan dapat diminta **untuk proses verifikasi**, tidak wajib ditampilkan pada profil publik. Tidak meminta status menikah saat daftar.
 3. Sistem membuat akun **berstatus menunggu verifikasi** dan `alumni_registration_requests`, **belum** memberi hak membaca data siswa, tagihan, atau riwayat orang lain. Email boleh diverifikasi dengan tautan jika SMTP tersedia; pengiriman langsung, tanpa Queue.
 4. **Petugas alumni (Admin BKK atau Admin Tracer)** meninjau klaim dan mencari kecocokan pada `students`, `graduations`, dan `alumni_profiles` berdasarkan beberapa informasi. Sistem menampilkan kandidat **hanya kepada admin**, bukan kepada pendaftar. **Jangan otomatis menghubungkan identitas hanya berdasarkan nama/NIS.**
@@ -920,8 +920,8 @@ Aturan proses yang harus diuji:
 | alumni_profiles (`student_id` nullable) | BKK, Tracer, dan Keuangan lewat `students.id` bila ada | Lulusan terdata tetap tertaut tagihan; alumni lama tanpa siswa tidak mendapat tagihan fiktif. |
 | assets                         | Sarpras, Laboratorium                    | Satu kode/ID aset; stok bahan habis pakai terpisah.                |
 | industry_partners              | HUBIN, PKL, BKK jika relevan             | Hindari pencatatan perusahaan ganda.                               |
-| classes + teachers             | Jurnal, Jadwal, Absensi                  | Jadwal tersedia sebagai pilihan hanya jika modul Jadwal aktif.     |
-| student_permissions            | Absensi                                  | Izin siswa disetujui menyelaraskan status absensi tanggal terkait. |
+| school_classes + teachers             | Jurnal, Jadwal, Absensi                  | Jadwal tersedia sebagai pilihan hanya jika modul Jadwal aktif.     |
+| student_leave_requests            | Absensi                                  | Izin siswa disetujui menyelaraskan status absensi tanggal terkait. |
 
 **Independensi modul.** Jika satu modul pasangan tidak aktif, modul lain tetap dapat beroperasi dengan data minimum yang tersedia pada Core System.
 
@@ -967,9 +967,9 @@ Aturan proses yang harus diuji:
 
 - Proses upload menggunakan validasi tipe/ukuran; tidak semua formulir harus mempunyai lampiran.
 
-- Backup dan pemeliharaan dilakukan melalui prosedur server, bukan Queue/Scheduler Laravel. Lakukan uji pemulihan backup.
+- Backup, pemeliharaan, dan pemulihan host dilakukan tim infrastruktur, bukan Queue/Scheduler Laravel. Developer menguji integritas aplikasi pada salinan data yang dipulihkan operator.
 
-- Gunakan HTTPS, autentikasi aman, pembatasan login/registrasi, MFA dianjurkan untuk owner dan pengelola data sensitif. Alumni menilai sendiri data pribadi apa yang ingin dibagikan; catatan pernikahan tidak ditampilkan di dashboard publik atau laporan tracer umum.
+- Gunakan HTTPS, autentikasi aman, pembatasan login/registrasi, MFA wajib untuk owner sebelum rilis produksi dan dianjurkan untuk pengelola data sensitif. Alumni menilai sendiri data pribadi apa yang ingin dibagikan; catatan pernikahan tidak ditampilkan di dashboard publik atau laporan tracer umum.
 
 - Tidak ada penghapusan otomatis ketika lisensi kedaluwarsa. Kebijakan retensi dan ekspor diatur dalam kontrak layanan.
 
@@ -985,10 +985,10 @@ Aturan proses yang harus diuji:
 
 | Area | Aturan yang wajib dipakai |
 |---|---|
-| Primary key | `id` BIGINT UNSIGNED auto increment untuk tabel utama; pakai pola sama di seluruh modul. |
+| Primary key | `id` BIGINT UNSIGNED auto increment untuk tabel utama; pakai pola sama di seluruh modul. Pengecualian: `bulk_operations.id` memakai UUID sesuai §12.7; `bulk_operation_items.operation_id` wajib bertipe UUID yang kompatibel. |
 | Foreign key | Gunakan FK pada data yang berkaitan; hindari penghapusan berantai untuk data historis penting. |
 | NIS / NISN | `students.id` adalah identitas relasional permanen; NIS unik dalam sekolah, NISN nullable dan unik jika terisi setelah verifikasi. |
-| Waktu | `created_at`, `updated_at` untuk tabel utama; `created_by` / `updated_by` pada aksi sensitif. Waktu server disimpan konsisten, ditampilkan dalam zona sekolah. |
+| Waktu | `created_at`, `updated_at` untuk tabel utama; `created_by` / `updated_by` pada aksi sensitif. Timestamp disimpan dalam UTC; tampilan dan tanggal efektif akademik memakai `Asia/Jakarta`. Kolom tanggal tanpa waktu tetap menyimpan tanggal lokal; uji batas hari/tahun. |
 | Status | Gunakan enum aplikasi / nilai status terdokumentasi, bukan sekadar teks bebas yang berbeda-beda. |
 | Data historis | Koreksi status menggunakan event/audit; catatan kelas, kelulusan, transaksi dan nilai tidak dihapus diam-diam. |
 | Lampiran | Simpan file privat dan referensi path di DB; file boleh nullable untuk surat, PKL, izin, dan catatan tertentu. |
@@ -1195,11 +1195,13 @@ Penamaan permission tetap konsisten: `resource.action`, misalnya `students.view`
 
 ## 14.1 Urutan implementasi yang tidak merusak data
 
+Nomor fase pada tabel ini adalah ringkasan produk, sedangkan ID pekerjaan tetap mengikuti `TASK.md`. Urutan eksekusi teknis: **F0 → skema/master F1 → F4 → penyelesaian impor F1 → F2 → F3 → F5/F6 → F7 → F8/F9**. K0–K2 dikerjakan bersama fondasi; K3 bersama QA/rilis. Kontrol lisensi minimum dari F3 disiapkan sebelum portal alumni dibuka. F4 harus tersedia sebelum impor, kenaikan, kelulusan, atau tagihan massal. Desain dan tes model invoice/payment disiapkan dalam F2; UI Keuangan tetap F5.09.
+
 | Fase | Implementasi | Syarat selesai |
 |---|---|---|
 | 0. Fondasi proyek | Laravel 13 + PHP 8.5 + Livewire 4 + Tailwind 4 + MariaDB; konfigurasi aplikasi dan `.env.example` aman | Aplikasi stabil, login/logout, migrasi dan rollback teruji di staging. |
-| 1. Data induk | Users/roles, profil sekolah, tahun ajaran, jurusan, kelas, siswa, guru, wali; impor validasi | ID siswa permanen, FK/unique berjalan, hasil impor jelas. |
-| 2. Akademik historis | Enrolmen, penempatan, pindah kelas, kenaikan kelas, program 3/4 tahun, kelulusan | Riwayat tidak terhapus; 600 siswa bisa diproses/diulang dengan progres nyata. |
+| 1. Data induk (F1 + F4 untuk impor) | Users/roles, profil sekolah, tahun ajaran, jurusan, kelas, siswa, guru, wali; impor validasi | ID siswa permanen, FK/unique berjalan, hasil impor jelas. |
+| 2. Akademik historis (F2, sesudah F4) | Enrolmen, penempatan, pindah kelas, kenaikan kelas, program 3/4 tahun, kelulusan | Riwayat tidak terhapus; 600 siswa bisa diproses/diulang dengan progres nyata. |
 | 3. Alumni & tagihan | Alumni lama/baru, riwayat kerja/kuliah/usaha, desain invoice/payment historis | Lulusan tetap terhubung ke tagihan; alumni lama tidak dibuat siswa fiktif. |
 | 4. Super Admin lokal | Aktivasi 15 modul, masa berlaku, catatan pembayaran manual, audit, pengaturan owner | Modul tidak aktif ditolak backend; tidak ada akses bebas owner ke data sensitif. |
 | 5. Modul operasional awal | Surat (tanpa file juga boleh), Website (menu dinamis), Absensi+Izin, Poin Pelanggaran | Alur lengkap per role, modal/konfirmasi/loading lulus uji. |
@@ -1321,7 +1323,7 @@ Bagian ini mengunci alamat URL **di setiap instalasi sekolah**. Contoh `smka.sch
 | `/admin/website` | CMS, menu/submenu dinamis | Permission Editor Website | `website` |
 | `/berkas/{berkas}/unduh` | Unduh dokumen privat melalui Controller | Role + policy per objek + lisensi bila terkait | Sesuai asal berkas |
 
-**Kontrak routing:** setiap route URL dan seluruh aksi Livewire harus melewati `auth`, pemeriksaan role/permission **dan** lingkup objek (siswa/kelas yang ditugaskan), serta `module-active` jika masuk modul berbayar. Route owner wajib terpisah dari operator sekolah; `owner` **bukan** bypass untuk catatan BK, pembayaran siswa, data sensitif siswa. Gunakan HTTP method POST/PATCH/DELETE untuk mutasi dan validasi CSRF; **jangan melakukan mutasi melalui GET**. Alumni yang hanya memiliki riwayat tidak boleh melihat profil siswa lain. Nama path tidak menjadi mekanisme keamanan.
+**Kontrak routing:** route publik yang disebut di tabel (website, login/reset, registrasi alumni) mengikuti batasan publiknya; tidak diwajibkan login. Seluruh route privat dan aksi Livewire privat harus melewati `auth`, pemeriksaan role/permission **dan** lingkup objek (siswa/kelas yang ditugaskan), serta `module-active` jika masuk modul berbayar. Route owner wajib terpisah dari operator sekolah; `owner` **bukan** bypass untuk catatan BK, pembayaran siswa, data sensitif siswa. Gunakan HTTP method POST/PATCH/DELETE untuk mutasi dan validasi CSRF; **jangan melakukan mutasi melalui GET**. Alumni yang hanya memiliki riwayat tidak boleh melihat profil siswa lain. Nama path tidak menjadi mekanisme keamanan.
 
 ## 15.2 Konfigurasi Laravel dan MariaDB (lingkup aplikasi)
 
@@ -1354,7 +1356,7 @@ FILESYSTEM_DISK=local
 
 - Nilai produksi (`APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` nyata, password database, kunci aplikasi) **disuplai secara aman oleh proses deployment**, tidak ditentukan di PRD.
 - `APP_KEY` harus unik per instalasi; key/token/kata sandi tidak boleh tersimpan dalam dokumentasi/repository.
-- Tanggal efektif dan laporan akademik memakai zona waktu sekolah (`Asia/Jakarta`); penyimpanan timestamp konsisten dan diuji pada batas pergantian hari.
+- Tanggal efektif dan laporan akademik memakai zona waktu sekolah (`Asia/Jakarta`); timestamp disimpan dalam UTC dan dikonversi saat ditampilkan; kolom tanggal efektif memakai tanggal lokal dan diuji pada batas pergantian hari.
 - Database wajib memiliki **foreign key, unique constraint, transaksi, dan indeks** sebagaimana Bab 12/17. Hak akses akun DB mengikuti prinsip minimum; pembukaan port dan pengamanan server termasuk lingkup operator VPS, bukan tugas pengembangan modul.
 
 # 16. Ketentuan keamanan dan privasi — minimum untuk produksi
@@ -1373,7 +1375,7 @@ Ketentuan berlaku pada seluruh modul tanpa menambah proses yang mengganggu pengg
 | Data sensitif | Catatan BK, riwayat pelanggaran, data keluarga, pembayaran, dan informasi pribadi alumni dibatasi; status menikah opsional dan privat | Audit permission per field dan laporan agregat |
 | Registrasi alumni | Verifikasi manual sebelum taut akun ke siswa lama; rate limit register/login/reset; cegah email enumeration dan klaim NIS orang lain | Akun palsu tidak dapat mengambil profil alumni lain |
 | Transaksi penting | MariaDB transaction, lock, unique constraint, idempotency, audit koreksi; tidak `cascade delete` histori penting | Tes dua request bersamaan untuk tagihan/kelulusan |
-| Monitoring & log | Log error seperlunya tanpa token/password/data BK; hak akses log dibatasi; file/DB backup disimpan terenkripsi di luar VPS | Cari data sensitif dalam log; tes akses backup |
+| Monitoring & log | Log error seperlunya tanpa token/password/data BK; hak akses log dibatasi. Enkripsi dan lokasi backup di luar VPS merupakan tanggung jawab tim infrastruktur | Cari data sensitif dalam log; developer memverifikasi integritas aplikasi setelah restore oleh operator |
 | Dependency aplikasi | Perbarui dependency Laravel/Livewire yang terdampak advisory, audit paket PHP/JS | `composer audit`, `npm audit`, regresi fitur utama |
 | Browser | CSRF, XSS/sanitasi CMS, cookie session yang aman, tidak membocorkan data privat; kebijakan header harus kompatibel Livewire | Tes interaksi frontend dan keamanan aplikasi |
 
@@ -1447,7 +1449,7 @@ PRD adalah spesifikasi, bukan bukti aplikasi berfungsi. Status **READY FOR APP H
 9. UAT Admin, Waka Kurikulum, Guru, TU, Bendahara, BK, dan BKK (sesuai modul rilis) lulus serta bug penghambat ditutup.
 10. Handover mencakup source/tag rilis, `.env.example` aman, dokumentasi setup **aplikasi saja**, daftar konfigurasi yang diperlukan dari operator, perintah migration/build aplikasi, hasil test, dan isu tersisa. Tidak ada konfigurasi domain/Nginx/SSL/VPS di dalam task developer.
 
-Detail bukti dan keputusan rilis ada di bagian Checklist kesiapan rilis aplikasi. Status **GO LIVE** untuk sekolah hanya dapat diputuskan setelah tim infrastruktur menyatakan platform pendukung siap melalui proses terpisah.
+Detail bukti dan keputusan rilis ada di bagian Checklist kesiapan rilis aplikasi pada `TASK.md`. Kriteria modul berlaku untuk modul dalam cakupan rilis; modul di luar cakupan tetap nonaktif. Core, keamanan, dan proses massal yang digunakan tetap wajib lulus. Status **GO LIVE** untuk sekolah hanya dapat diputuskan setelah tim infrastruktur menyatakan platform pendukung siap melalui proses terpisah.
 
 
 ---

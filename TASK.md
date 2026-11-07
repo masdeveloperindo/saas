@@ -6,7 +6,7 @@
 > Gunakan checkout yang sudah ada; setiap tugas cloud sudah terisolasi dan tidak memerlukan Git worktree baru.
 
 
-**Versi:** 1.3 (App-Only) · **Status:** Belum dimulai (semua kotak tugas masih kosong)  
+**Versi:** 1.4 (App-Only, selaras PRD 4.6) · **Status:** Belum dimulai (semua kotak tugas masih kosong)
 **Acuan utama:** [`PRD.md`](PRD.md)  
 **Instruksi coding:** bagian Panduan implementasi dalam dokumen ini  
 **Referensi UI:** [`prototype/index.html`](prototype/index.html) dan prototipe HTML lainnya.
@@ -15,7 +15,7 @@
 
 ## Cara menggunakan checklist
 
-1. Kerjakan tahap sesuai urutan **F0 → F1 → F2 → F3 → modul → QA → rilis aplikasi**; jangan mengerjakan seluruh modul sekaligus.
+1. Kerjakan tahap sesuai urutan **F0 → skema/master F1 → F4 → penyelesaian impor F1 → F2 → F3 → F5/F6 → F7 → F8/F9**; jangan mengerjakan seluruh modul sekaligus.
 2. Tandai `[x]` **hanya** jika implementasi sudah ada, diuji, dan kriteria selesai terpenuhi. Tambahkan referensi commit/PR atau bukti pengujian pada laporan kemajuan.
 3. Setiap modul yang sudah dibangun harus lulus tes izin pengguna, validasi input, aktivasi lisensi, dan integritas data.
 4. Ikuti PRD bila ada perbedaan antara PRD dan HTML (HTML hanya contoh). Jangan memperluas MVP tanpa kebutuhan pengguna.
@@ -26,12 +26,14 @@
 - **Satu sekolah = satu VPS = satu instalasi Laravel = satu MariaDB**, dengan domain `.sch.id` sekolah.
 - Stack: **Laravel 13, PHP 8.5, Livewire 4, Blade, Tailwind CSS 4, Nginx, MariaDB**.
 - **Satu Super Admin SaaS lokal** di `/owner`, terpisah dari Admin Sekolah di `/admin`. Tidak ada VPS/domain pusat dan **bukan multi-tenant**.
-- **15 modul tetap**, modular monolith, diaktifkan menurut lisensi lokal. Core System selalu tersedia.
+- **15 modul tetap**, modular monolith, diaktifkan menurut lisensi lokal. Core System selalu tersedia. Dokumen Markdown proyek tetap hanya `PRD.md` dan `TASK.md`; panduan dan bukti progres ditulis di dua dokumen ini.
 - **Tanpa Queue, Scheduler, worker, Redis, WebSocket, cron aplikasi, payment gateway, PPDB, UKK, absensi guru, atau akun pembimbing industri.**
 - Perizinan siswa **dan guru** adalah bagian dari modul `absensi_izin`; **bukan modul ke-16**.
 - Proses massal menggunakan request HTTP paralel terbatas; persentase berasal dari transaksi yang benar-benar tersimpan di database.
 
 ---
+
+**Dependensi lintas tahap:** F1.07 (impor massal) diselesaikan setelah F4, bukan syarat membangun F4. Kontrol lisensi minimum F3.03/F3.05 disiapkan sebelum membuka portal F2.08. Model invoice/payment dan tes historis disiapkan pada F2.14; UI, laporan, dan penyelesaian Keuangan tetap F5.09. K0–K2 menyertai tahap terkait, tidak harus seluruh route modul selesai pada F0.
 
 ## K — Kontrak routing, database dan keamanan aplikasi (wajib sebelum coding modul)
 
@@ -41,7 +43,7 @@
 
 - [ ] K0.01 Implementasikan peta route PRD Bab 15: halaman publik `/`, login/reset, `/owner`, `/admin`, siswa, alumni, dan seluruh 15 prefix modul.
 - [ ] K0.02 Buat named routes dan route test (GET/POST/PATCH/DELETE sesuai aksi); jangan mengubah data menggunakan GET.
-- [ ] K0.03 Semua URL private wajib autentikasi, pemeriksaan permission dan lisensi (serta scope objek). Owner **tidak** boleh membaca BK/keuangan personal tanpa izin.
+- [ ] K0.03 Semua URL private wajib autentikasi, permission dan scope objek; lisensi diperiksa untuk fitur modul berbayar, bukan sebagai syarat akses Core. Owner **tidak** boleh membaca BK/keuangan personal tanpa izin.
 - [ ] K0.04 Semua tautan internal memakai named routes; aplikasi bekerja pada host yang disediakan operator VPS, tanpa domain hardcoded.
 - [ ] K0.05 Website tidak aktif tetap menyajikan halaman informasi minimal pada `/` dan akses `/admin` tetap normal; portal alumni mandiri hanya terbuka jika BKK/Tracer aktif.
 
@@ -81,8 +83,8 @@
 
 **Dependensi:** tidak ada. **Hasil:** aplikasi Laravel bisa diakses dan login pada lingkungan development.
 
-- [ ] F0.01 Buat repository dan instal Laravel 13 pada PHP 8.5, Livewire 4, Tailwind CSS 4.
-- [ ] F0.02 Siapkan `.env.example` tanpa rahasia, koneksi MariaDB, timezone `Asia/Jakarta`, dan storage privat.
+- [ ] F0.01 Gunakan repository yang sudah ada dan instal Laravel 13 pada PHP 8.5, Livewire 4, Tailwind CSS 4.
+- [ ] F0.02 Siapkan `.env.example` tanpa rahasia, koneksi MariaDB, timestamp UTC, tampilan/tanggal efektif `Asia/Jakarta`, dan storage privat.
 - [ ] F0.03 Buat struktur modular monolith yang konsisten untuk Core System dan 15 modul; kode modul harus stabil.
 - [ ] F0.04 Siapkan login, logout, reset password, session, CSRF, rate limit login, dan pembuatan Super Admin pertama yang aman.
 - [ ] F0.05 Pisahkan layout `/owner`, `/admin`, portal siswa/alumni sesuai hak akses; implementasikan sidebar hanya untuk modul aktif.
@@ -101,13 +103,15 @@
 - [ ] F1.01 Migration profil sekolah, jurusan/program 3–4 tahun, mata pelajaran, tahun ajaran/semester, kelas/rombel.
 - [ ] F1.02 Migration `students`, `teachers`, `staff`, `users` dan relasi akun, dengan NIS unik dan NISN unik jika tersedia.
 - [ ] F1.03 Migration `student_enrollments` dan `student_class_placements` sebagai riwayat; **jangan hanya menyimpan `students.class_id`**.
-- [ ] F1.04 CRUD profil sekolah, jurusan, kelas, guru, staf, siswa; filter/pencarian sederhana.
+- [ ] F1.04 CRUD profil sekolah, jurusan, mata pelajaran, tahun ajaran/semester, kelas, guru, staf, siswa; filter/pencarian sederhana.
 - [ ] F1.05 Role dapat rangkap, permission berdasarkan tindakan **dan** objek yang ditugaskan; buat Policies/Gates/Middleware.
 - [ ] F1.06 CRUD akun yang diizinkan, nonaktifkan akun, reset akses; tidak membuat akun siswa/alumni ganda.
-- [ ] F1.07 Impor siswa/guru/kelas dari Excel/CSV dengan template, validasi, preview, penanganan duplikat; ekspor sesuai izin.
+- [ ] F1.07 Setelah F4 tersedia, impor siswa/guru/kelas dari Excel/CSV dengan template, validasi, preview, penanganan duplikat; ekspor sesuai izin.
 - [ ] F1.08 Tahun ajaran baru dimulai sebagai **draft**, diaktifkan secara eksplisit; pergantian tahun **tidak otomatis** menaikkan kelas.
 - [ ] F1.09 Riwayat kelas terlihat per siswa; pindah kelas mencatat tanggal efektif tanpa menimpa penempatan lama.
 - [ ] F1.10 Uji foreign key, indeks unik, validasi data, dan larangan menghapus histori penting melalui cascade.
+
+- [ ] F1.11 Implementasikan `guardians`/`student_guardians`, relasi satu wali ke beberapa siswa, wali utama, dan verifikasi tautan akun wali sebelum akses data anak; akun wali opsional sesuai PRD §4.2/§5.2/§12.2.
 
 **Selesai jika:** seorang siswa mempunyai satu identitas permanen; perubahan kelas tidak menghapus riwayat; siswa belum diproses tetap terlihat.
 
@@ -122,12 +126,16 @@
 - [ ] F2.05 Buat dashboard **sudah diproses / belum diproses / gagal**, agar sebagian siswa tidak hilang ketika tahun ajaran aktif berubah.
 - [ ] F2.06 Buat **proses kelulusan terpisah** (tidak otomatis saat naik tingkat/tahun ajaran), mendukung lulus, belum lulus, dan pengecualian.
 - [ ] F2.07 Pastikan kelulusan hanya sekali per siswa, alumni baru terhubung ke siswa dan memakai **akun yang sama** jika sudah ada.
-- [ ] F2.08 Portal registrasi mandiri **alumni lama**, pencocokan identitas, review/verifikasi BKK, pencegahan klaim ganda dan penyamaran.
+- [ ] F2.08 Portal registrasi mandiri **alumni lama**, pencocokan identitas, review/verifikasi Admin BKK jika BKK aktif atau Admin Tracer jika hanya Tracer aktif, pencegahan klaim ganda dan penyamaran.
 - [ ] F2.09 Buat `alumni_profiles` dengan `student_id` nullable untuk alumni lama; proses tautkan arsip siswa bila cocok dan diverifikasi.
 - [ ] F2.10 Profil alumni dan histori **pekerjaan, kuliah, wirausaha** yang dapat tumpang tindih; tanggal mulai/selesai dan status aktif.
 - [ ] F2.11 Data status perkawinan/kejadian pribadi hanya **opsional dan privat**, tidak wajib untuk tracer umum.
 - [ ] F2.12 Pengunduran diri, mutasi masuk/keluar, dan siswa yang tinggal kelas tidak membuat alumni fiktif.
 - [ ] F2.13 Uji identitas dan riwayat akademik tetap utuh setelah naik, pindah, lulus, dan pendaftaran alumni lama.
+
+- [ ] F2.14 Siapkan model/migration invoice dan payment historis sesuai PRD §12.4; uji snapshot tarif/kelas serta tunggakan tetap utuh setelah naik/pindah/lulus dengan fixture sintetis. Ini persiapan skema dan tes, bukan aktivasi modul Keuangan sebelum F5.09.
+
+- [ ] F2.15 Uji koreksi kelulusan melalui peninjauan data terkait dan audit tanpa menghapus profil/tracer/tagihan; siswa mutasi keluar yang kembali memakai identitas lama (PRD S11–S12).
 
 **Selesai jika:** siswa kelas XII/XIII tidak otomatis alumni; alumni lama bisa mendaftar sendiri; akun dan histori terkait tidak terduplikasi.
 
@@ -135,7 +143,7 @@
 
 **Dependensi:** F0–F1. **Hasil:** pemilik SaaS dapat mengelola modul di tiap instalasi sekolah.
 
-- [ ] F3.01 Buat `/owner` dengan akses Super Admin terproteksi (MFA jika tersedia, pembatasan akses jika memungkinkan).
+- [ ] F3.01 Buat `/owner` dengan akses Super Admin terproteksi (MFA wajib sebelum rilis produksi; pembatasan akses tambahan sesuai lingkungan operator).
 - [ ] F3.02 Profil pelanggan **satu sekolah** pada VPS tersebut; tidak ada katalog banyak tenant di instalasi.
 - [ ] F3.03 Seed 15 modul dengan kode stabil; modul yang tidak aktif tidak muncul di menu.
 - [ ] F3.04 Aktivasi/nonaktifkan modul, masa berlaku, catatan perpanjangan, dan pencatatan pembayaran langganan manual.
@@ -150,7 +158,7 @@
 
 **Dependensi:** F0, skema data F1. **Digunakan oleh:** impor siswa/alumni, kenaikan, kelulusan, tagihan massal.
 
-- [ ] F4.01 Migration `bulk_operations` dan `bulk_operation_items` (unique `operation_id` + `entity_key`), status dan error ringkas.
+- [ ] F4.01 Migration `bulk_operations` (PK UUID) dan `bulk_operation_items` (FK `operation_id` bertipe kompatibel, unique `operation_id` + `entity_key`), status, lease/token, dan error ringkas.
 - [ ] F4.02 Endpoint authenticated/authorized: **preview → start → claim/process batch → status → pause/resume → retry failed**.
 - [ ] F4.03 Snapshot target saat start agar hasil filter yang berubah tidak mengubah daftar sasaran proses berjalan.
 - [ ] F4.04 Browser mengeksekusi maksimal **2–3 request HTTP paralel**, 10–25 item per request (konfigurasi; uji kapasitas VPS).
@@ -161,7 +169,7 @@
 - [ ] F4.09 Saat koneksi putus/browser ditutup, baca status DB terlebih dahulu ketika kembali; selesaikan/reclaim item yang terputus secara aman.
 - [ ] F4.10 Retry **hanya item gagal** yang boleh diproses ulang; cegah duplikasi dua tab browser dan dua petugas menjalankan operasi sama.
 - [ ] F4.11 Simpan daftar item gagal, alasan yang aman ditampilkan, dan opsi unduh hasil.
-- [ ] F4.12 Uji 100/500/1.000 siswa sintetis, refresh, timeout, dua browser, retry, dan tanpa data hilang/duplikat.
+- [ ] F4.12 Uji 100/600/1.000 siswa sintetis, refresh, timeout, dua browser, retry, dan tanpa data hilang/duplikat.
 
 **Selesai jika:** 100% berarti semua item memperoleh hasil (bukan semua sukses), dan resume/retry tidak mengubah item yang telah berhasil.
 
@@ -169,25 +177,53 @@
 
 ## F5 — Modul aplikasi (15 produk, kerjakan berurutan)
 
-**Syarat untuk setiap modul:** migrasi + validasi + role/permission + pemeriksaan lisensi + UI loading/modal + laporan bila dibutuhkan + pengujian proses utama. Modul harus berfungsi sendiri; integrasi dengan modul lain **opsional** berdasarkan lisensi aktif.
+**Acuan cakupan:** setiap baris F5 wajib memenuhi seluruh fitur inti, proses bisnis, status, keluaran, dan aturan penting modul terkait pada PRD Bab 7; ringkasan tabel bukan pengganti rincian PRD. QR aset adalah opsional, bukan syarat MVP. Nomor urutan F5 adalah urutan pengerjaan, bukan nomor katalog produk PRD; kode modul adalah identitas tetap.
+
+**Syarat untuk setiap modul:** migrasi + validasi + role/permission + pemeriksaan lisensi + UI loading/modal + laporan bila dibutuhkan + pengujian proses utama. Modul harus berfungsi sendiri; integrasi PRD Bab 8 **wajib saat kedua modul terkait aktif**; saat pasangan tidak aktif, modul tetap berjalan dengan data minimum Core tanpa menduplikasi master bersama.
 
 | Urutan | Kode modul | Minimum yang dikerjakan | Role dan alur selesai | Referensi HTML |
 |---|---|---|---|---|
 | 01 | `website` | CMS halaman, berita, pengumuman, galeri, profil jurusan, **menu/submenu dinamis** (urut/sembunyi/URL) | Editor buat → preview → terbit → pengunjung lihat | `12-website.html` |
 | 02 | `surat` | Surat masuk/keluar, nomor unik, template, arsip; **file opsional** (catat metadata/editor/upload) | TU buat/catat → persetujuan seperlunya → arsip | `10-surat.html` |
 | 03 | `absensi_izin` | **Absensi siswa saja**, izin siswa/guru, persetujuan, rekonsiliasi izin–absensi | Guru piket absen; siswa/guru ajukan izin → pejabat setujui → rekap | `08-absensi.html` |
-| 04 | `pelanggaran` | Tata tertib, bobot, catat, validasi, poin prestasi, pembinaan, keberatan | Guru catat → Kesiswaan validasi → BK tindak lanjut | `13-pelanggaran.html` |
+| 04 | `pelanggaran` | Tata tertib, bobot, catat, validasi, pembinaan, keberatan | Guru catat → Kesiswaan validasi → BK tindak lanjut | `13-pelanggaran.html` |
 | 05 | `pkl` | Mitra, penempatan, jurnal, absensi, monitoring, nilai industri **diinput guru dari kertas** | Koordinator tempatkan → siswa jurnal → guru pantau/input nilai → laporan | `07-pkl.html` |
 | 06 | `jurnal_guru` | Isi jurnal, riwayat, pemeriksaan, rekap | Guru isi → Waka monitor | `14-modul-lain.html` |
 | 07 | `jadwal` | Hari/jam, pembagian guru, jadwal kelas, deteksi bentrok, cetak | Waka susun → cek bentrok → terbit | `14-modul-lain.html` |
 | 08 | `bk` | Konseling, jadwal, tindak lanjut, statistik tanpa mengumbar rahasia | Guru BK tangani → tindak lanjut → rekap terbatas | `14-modul-lain.html` |
 | 09 | `keuangan` | Tarif, tagihan, cicilan, kuitansi, tunggakan, koreksi/void ber-audit | Bendahara terbitkan → terima/catat → laporan | `09-keuangan.html` |
-| 10 | `sarpras` | Master aset unit/QR, kondisi, lokasi, peminjaman | Sarpras catat → pinjam → kembali | `11-sarpras.html` |
+| 10 | `sarpras` | Master aset unit (QR opsional), kondisi, lokasi, peminjaman | Sarpras catat → pinjam → kembali | `11-sarpras.html` |
 | 11 | `laboratorium` | Pakai **master aset yang sama**, stok bahan habis pakai, jadwal, peminjaman | Kepala Lab kelola → guru pinjam/pakai → kembali | `11-sarpras.html` |
 | 12 | `hubin` | Master mitra bersama PKL, MoU, kegiatan, masa berlaku | HUBIN catat mitra → kerja sama → laporan | `14-modul-lain.html` |
 | 13 | `bkk` | Lowongan, daftar alumni, lamaran, status hasil rekrutmen | BKK terbitkan → alumni melamar → BKK catat hasil | `06-alumni.html`, `14-modul-lain.html` |
 | 14 | `tracer` | Form sederhana dan snapshot jawaban; analitik agregat | Alumni isi → Admin tracer periksa → laporan | `06-alumni.html`, `14-modul-lain.html` |
 | 15 | `supervisi` | Jadwal, instrumen, nilai, tindak lanjut, laporan | Supervisor nilai → guru lihat/tindak lanjut → rekap | `14-modul-lain.html` |
+
+### Pemetaan cakupan PRD ke tugas
+
+| Bagian PRD | Kebutuhan | Task pelaksana | Bukti penerimaan |
+|---|---|---|---|
+| §3–4, §13, §15–16 | Arsitektur, Core, role, route dan keamanan | F0, F1, F3, K0–K2 | Tes akses role/objek, MFA, route publik/privat dan lisensi |
+| §5.1–5.9, §12.2–12.4 | Identitas dan histori akademik/keuangan | F1, F2, F5.09, F6.01 | S01–S14, U04–U07, tes DB pada §14.3 |
+| §5.10, §12.3 | Registrasi dan riwayat alumni | F2.07–F2.11, F5.13–F5.14 | A01–A09, U13–U14, tes BKK saja/Tracer saja |
+| §5.4.1, §5.11, §12.7, §17.2 | Mesin massal dan pemulihan | F4, F7.09 | M01–M09, U15, BL01 dan tes bulk lain §14.3 |
+| Bab 7 modul 01 | `pkl` | F5.05 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 02 | `jurnal_guru` | F5.06 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 03 | `absensi_izin` | F5.03 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 04 | `surat` | F5.02 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 05 | `keuangan` | F5.09 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 06 | `bkk` | F5.13 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 07 | `sarpras` | F5.10 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 08 | `bk` | F5.08 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 09 | `jadwal` | F5.07 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 10 | `tracer` | F5.14 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 11 | `hubin` | F5.12 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 12 | `supervisi` | F5.15 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 13 | `laboratorium` | F5.11 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 14 | `pelanggaran` | F5.04 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 7 modul 15 | `website` | F5.01 | Semua fitur, alur, status, laporan dan aturan penting modul; tes role/lisensi dan UAT |
+| Bab 8, §12.5–12.6 | Master bersama dan integrasi | F6, F7 | U08–U10; tes modul pasangan nonaktif, tanpa master ganda |
+| Bab 14, §17.3, Bab 18 | QA dan bukti handover | F7–F9, K3 | Checklist kesiapan rilis pada dokumen ini, bukti test dan UAT sesuai cakupan |
 
 ### Checklist penyelesaian modul (duplikasi untuk setiap modul)
 
@@ -203,8 +239,8 @@
 - [ ] F5.10 `sarpras` — UI + backend + role + test selesai.
 - [ ] F5.11 `laboratorium` — UI + backend + role + test selesai (aset sinkron).
 - [ ] F5.12 `hubin` — UI + backend + role + test selesai (mitra bersama PKL).
-- [ ] F5.13 `bkk` — UI + backend + role + test selesai.
-- [ ] F5.14 `tracer` — UI + backend + role + test selesai (aktivitas alumni paralel).
+- [ ] F5.13 `bkk` — lowongan, lamaran/CV opsional, status seleksi dan laporan; gunakan registrasi/profil alumni F2, uji BKK aktif tanpa Tracer/Website.
+- [ ] F5.14 `tracer` — periode/form survei, snapshot jawaban historis dan laporan agregat; aktivitas alumni paralel; uji Tracer aktif tanpa BKK/Website dan perubahan profil tidak menimpa jawaban lama.
 - [ ] F5.15 `supervisi` — UI + backend + role + test selesai.
 
 ## F6 — Integrasi data lintas modul
@@ -234,7 +270,7 @@
 - [ ] F7.06 Uji transaksi pembayaran paralel: tidak overpayment, tidak terjadi kuitansi duplikat.
 - [ ] F7.07 Uji stok dan pinjaman aset paralel: stok tidak minus, aset sama tidak dipinjam ganda.
 - [ ] F7.08 Uji registrasi alumni lama: duplikat, upaya klaim identitas, verifikasi ditolak, akun terhubung dengan benar.
-- [ ] F7.09 Uji penanganan gangguan koneksi ketika bulk berjalan, status pemulihan, pause/resume/retry.
+- [ ] F7.09 Uji penanganan gangguan koneksi ketika bulk berjalan, status pemulihan, pause/resume/retry, snapshot 600 siswa lintas halaman, lease kedaluwarsa, serta pencabutan role/lisensi di tengah operasi (request berikutnya ditolak tanpa membatalkan hasil yang sudah commit).
 - [ ] F7.10 Uji performa pada **spesifikasi VPS target yang sebenarnya**, termasuk pembuatan laporan dan 2–3 batch HTTP paralel.
 - [ ] F7.11 Lakukan review privasi: BK, catatan pelanggaran, informasi keluarga, dokumen, foto siswa, dan audit log.
 - [ ] F7.12 Jalankan tes otomatis serta UAT operator sekolah (TU, guru, wali kelas, BK, Bendahara, HUBIN, Admin).
@@ -271,14 +307,14 @@
 
 ## F9 — Bukti kualitas dan handover aplikasi
 
-**Dependensi:** F7/F8. **Hasil:** dokumen bagian Checklist kesiapan rilis aplikasi dan artefak aplikasi yang bisa dievaluasi secara independen.
+**Dependensi:** F7/F8. **Hasil:** bagian Checklist kesiapan rilis aplikasi dan artefak aplikasi yang bisa dievaluasi secara independen.
 
 - [ ] F9.01 Isi checklist go-live aplikasi disertai bukti test (nama test, commit, screenshot/error log teredaksi, penguji, tanggal).
 - [ ] F9.02 Dokumentasikan daftar 15 modul beserta status: siap diuji / lulus / belum diimplementasikan. Jangan mengaktifkan penjualan modul yang belum selesai.
 - [ ] F9.03 Serahkan release tag, source code, build instructions, migration/seeder, `.env.example`, route map, panduan role, dan panduan penggunaan inti.
 - [ ] F9.04 Pastikan dokumentasi tidak memuat domain/IP rahasia, password sekolah, NISN nyata, atau data BK/keuangan asli.
 - [ ] F9.05 Handover kontrak kebutuhan aplikasi ke tim infrastruktur, **tanpa** konfigurasi server; penerimaan operasi host dilakukan terpisah.
-- [ ] F9.06 Catat keputusan **GO / NO-GO / LIMITED PILOT** serta pemberi persetujuan sekolah dan developer. Status 'GO' aplikasi tetap bukan klaim infrastruktur telah siap.
+- [ ] F9.06 Catat keputusan **READY FOR APP HANDOVER / NO-GO / LIMITED PILOT** serta pemberi persetujuan sekolah dan developer. Status 'READY FOR APP HANDOVER' tetap bukan klaim infrastruktur telah siap.
 
 **Selesai jika:** bagian Checklist kesiapan rilis aplikasi berisi bukti pemeriksaan seluruh gerbang wajib dan tidak ada blocker aplikasi.
 
@@ -475,21 +511,15 @@ Berlaku untuk impor siswa, penempatan kelas, promosi, kelulusan, tagihan massal,
 8. Jika browser ditutup, tidak ada pekerjaan baru berjalan di background. Request yang sudah terkirim dapat selesai; ketika login kembali operator dapat memeriksa status dan melanjutkan. Jangan menganggap timeout sebagai bukti gagal.
 9. Simpan error ringkas yang aman bagi operator; berikan daftar gagal yang bisa diunduh. Semua endpoint preview/start/process/status/pause/resume/retry memiliki autentikasi dan otorisasi.
 
-### 7. Urutan implementasi (kerjakan satu fase sampai valid)
+### 7. Urutan implementasi (gunakan ID checklist, bukan penomoran fase lain)
 
-**Fase 0 — Fondasi:** project Laravel, koneksi MariaDB melalui konfigurasi Laravel, login/logout, role & permission dasar, layout responsif, komponen modal/loading/toast, tes dasar.
-
-**Fase 1 — Master akademik:** profil sekolah, tahun ajaran, jurusan 3/4 tahun, kelas, siswa, guru, wali, impor Excel dengan preview/validasi, riwayat kelas.
-
-**Fase 2 — Siklus siswa:** pindah kelas, kenaikan massal, kelas XII/XIII, kelulusan, akun alumni, pendaftaran alumni lama & verifikasi, riwayat aktivitas; pengujian duplikasi dan histori.
-
-**Fase 3 — Keuangan & lisensi dasar:** model invoice snapshot, transaksi pembayaran & koreksi, owner lokal, aktivasi modul, expiration, audit minimal; jangan membuat payment gateway.
-
-**Fase 4 — Modul operasional prioritas:** Surat (file opsional), Website (menu dinamis), Absensi Siswa & Izin, Poin Pelanggaran.
-
-**Fase 5 — Modul lainnya sesuai PRD:** PKL, Jurnal Guru, Jadwal, BK, BKK, Tracer, HUBIN, Sarpras, Laboratorium, Supervisi, serta layar Keuangan final.
-
-**Fase 6 — Pra-produksi:** pengujian role & data sensitif, batch paralel, fail/retry, verifikasi aplikasi setelah pemulihan data oleh operator terpisah, verifikasi rilis aplikasi, UAT dan pilot sekolah. Infrastruktur VPS ditangani terpisah.
+1. **F0 + K0–K2 terkait:** fondasi, autentikasi, permission, konfigurasi MariaDB, layout dan tes dasar.
+2. **Skema/master F1:** identitas siswa/guru/wali, kelas dan histori akademik; siapkan kontrol lisensi minimum F3.03/F3.05 sebelum portal alumni dibuka.
+3. **F4 lalu F1.07:** bangun dan uji mesin massal, kemudian integrasikan impor. Jangan menunggu impor selesai untuk membangun F4.
+4. **F2:** siklus siswa, kenaikan/kelulusan, alumni dan registrasi/verifikasi; F2.14 menyiapkan model invoice/payment dan tes historis.
+5. **Selesaikan F3:** owner, MFA, lisensi lokal dan pembayaran langganan manual.
+6. **F5/F6:** implementasikan 15 modul bertahap menurut tabel F5 serta integrasi pasangan yang sudah ada. Keuangan lengkap berada di F5.09.
+7. **F7 → F8/F9 + K3:** QA, keamanan, UAT, bukti rilis dan handover aplikasi; infrastruktur dikelola terpisah.
 
 **Untuk setiap fase**:
 1. Tampilkan rencana perubahan dan daftar file yang dibuat/diubah.
@@ -532,13 +562,13 @@ Setelah mengerjakan fase, berikan:
 - Screenshot atau preview UI **bila benar-benar dihasilkan**.
 - Poin penerimaan yang sudah dan belum terpenuhi.
 
-**Mulai dari Fase 0 dan Fase 1.** Jangan membangun 15 modul sekaligus dan jangan mengarang hasil testing atau membuat data produksi palsu.
+**Mulai hanya dari F0.01–F0.03 dan persiapan K0/K1 yang diperlukan; tahap selanjutnya mengikuti checklist.** Jangan membangun 15 modul sekaligus dan jangan mengarang hasil testing atau membuat data produksi palsu.
 
 ---
 
 ## Catatan terakhir
 
-Paket ini **siap untuk review desain dan mulai development**, **belum siap produksi**. Produksi membutuhkan aplikasi Laravel/MariaDB yang selesai, bukti testing, backup/restore, keamanan, dan pilot sekolah sesuai Bab 14 PRD.
+Paket ini **siap untuk review desain dan mulai development**, **belum siap produksi**. Produksi membutuhkan aplikasi Laravel/MariaDB yang selesai, bukti testing, keamanan, verifikasi aplikasi setelah restore oleh operator, serta pilot sekolah sesuai Bab 14 PRD.
 
 
 ## 10. Definition of Done dan batas tanggung jawab (FINAL)
@@ -555,6 +585,8 @@ Setiap permintaan membuat fitur harus mempertahankan seluruh keputusan PRD: 15 m
 ---
 
 ## Checklist kesiapan rilis aplikasi
+
+Gerbang modul dan integrasi diuji sesuai cakupan rilis yang dicatat; modul di luar cakupan tetap nonaktif. Core, keamanan, dan mesin massal yang digunakan tidak boleh dilewati. Setiap item tidak relevan harus dicatat alasannya, bukan diberi centang lulus.
 
 
 **Versi:** 1.0 — 4 November 2026  
@@ -594,7 +626,7 @@ Setiap permintaan membuat fitur harus mempertahankan seluruh keputusan PRD: 15 m
 - [ ] B04 Program empat tahun mendukung XII→XIII, sedangkan program tiga tahun tidak memaksakan XIII.
 - [ ] B05 Tahun ajaran baru tidak otomatis menaikkan siswa; siswa belum diproses tetap terdaftar dan terhitung.
 - [ ] B06 Kelulusan disetujui operator berwenang; tidak otomatis karena tahun berubah. Akun siswa yang lulus berlanjut sebagai alumni bila ada.
-- [ ] B07 Alumni lama registrasi mandiri, dicegah klaim identitas orang lain, diverifikasi Admin BKK, tidak perlu siswa fiktif.
+- [ ] B07 Alumni lama registrasi mandiri, dicegah klaim identitas orang lain, diverifikasi Admin BKK atau Admin Tracer sesuai modul aktif, tidak perlu siswa fiktif.
 - [ ] B08 Alumni mengelola riwayat kerja/kuliah/usaha yang boleh bertumpang tindih; informasi pernikahan opsional, privat.
 - [ ] B09 Tagihan menyimpan snapshot periode/tarif/kelas, tidak berubah saat siswa naik/pindah/lulus.
 - [ ] B10 Pembayaran cicilan, kuitansi unik, koreksi/void diaudit, transaksi bersamaan tidak menyebabkan overpayment.
@@ -658,7 +690,7 @@ Setiap permintaan membuat fitur harus mempertahankan seluruh keputusan PRD: 15 m
 - [ ] F02 UAT minimal Admin Sekolah, TU, Guru/Wali, Waka, Bendahara, Guru BK, dan BKK sesuai modul yang dilepas.
 - [ ] F03 Semua blocker Severity 1/2 (kebocoran data, uang salah, duplikasi, otorisasi, data hilang) sudah ditutup dan diuji regresi.
 - [ ] F04 Tag rilis + commit hash + catatan perubahan tersedia.
-- [ ] F05 File `.env.example` aman; README aplikasi; named route map; daftar extension PHP yang dibutuhkan; urutan command build/migrate tersedia, **tanpa konfigurasi VPS/domain/Nginx/SSL**.
+- [ ] F05 File `.env.example` aman; panduan setup/penggunaan aplikasi pada `TASK.md`; named route map; daftar extension PHP yang dibutuhkan; urutan command build/migrate tersedia, **tanpa konfigurasi VPS/domain/Nginx/SSL**.
 - [ ] F06 Prosedur rollback **aplikasi** dijelaskan dan diuji pada database sintetis; tidak menggunakan operasi destruktif di produksi.
 - [ ] F07 Developer menyerahkan informasi data apa yang perlu dibackup dan cara aplikasi memeriksa hasil restore; pekerjaan backup/restore host oleh operator terpisah.
 - [ ] F08 Tidak ada Queue, Scheduler, job worker, webhook payment, atau integrasi pemerintah yang diam-diam menjadi syarat utama.
