@@ -1,13 +1,13 @@
 # PRD Platform SaaS SMK — Dedicated VPS per Sekolah
 
-**Product Requirements Document (PRD) · Versi 4.7 · Revisi keputusan operasional**
+**Product Requirements Document (PRD) · Versi 4.8 · Penyelesaian audit proses bisnis**
 **Ruang lingkup:** Core System + 15 modul operasional SMK.  
 **Arsitektur:** satu sekolah = satu VPS = satu instalasi Laravel + MariaDB.  
 **Tujuan utama:** aplikasi praktis; perpindahan siswa, kelulusan, alumni, dan keuangan selalu konsisten.
 
 | **Dokumen** | **Keterangan**                                                       |
 |-------------|----------------------------------------------------------------------|
-| Versi       | 4.7 — pengembangan aplikasi saja; konfigurasi infrastruktur tidak termasuk pekerjaan developer |
+| Versi       | 4.8 — pengembangan aplikasi saja; konfigurasi infrastruktur tidak termasuk pekerjaan developer |
 | Tanggal     | Revisi keputusan operasional                                                      |
 | Status      | Draf implementasi MVP; persetujuan alur operasional sekolah diperlukan                   |
 | Target      | SMK di Indonesia                                                     |
@@ -188,7 +188,7 @@ Gunakan **13 role inti** berikut. Jabatan seperti Waka Kurikulum/Kesiswaan/HUBIN
 | `penugasan_unit` | `id`, `pengguna_id`, `ruang_id`, rentang berlaku, `status` | Batas ruang/aset Lab dan Sarpras. Aset memakai lokasi/ruang master yang sama. |
 | `delegasi_tugas` | `id`, `pengguna_asal_id`, `pengguna_pengganti_id`, `jenis_tugas`, referensi penugasan, hak tindakan terbatas, rentang berlaku, `dibuat_oleh`, `alasan`, `status` | Guru pengganti, wali pengganti, koreksi data lampau atau petugas izin pengganti; tidak menggandakan role. Tidak boleh memberikan hak di luar izin pemberi delegasi/admin berwenang. |
 
-- Peran memberi kelompok hak tindakan; tabel penugasan memberi lingkup objek. Server menolak bila pengguna nonaktif, lisensi fitur tidak aktif, hak tindakan tidak ada, atau objek di luar lingkup. `role` saja tidak cukup. Model FK harus nyata dan diuji, bukan ID teks bebas yang menerima semua tabel.
+- Peran memberi kelompok hak tindakan; tabel penugasan memberi lingkup objek. Server menolak bila pengguna nonaktif, hak tindakan tidak ada atau objek di luar lingkup; lisensi aktif diwajibkan untuk fitur operasional, sedangkan arsip/bukti/progres Core mengikuti pengecualian berotorisasi §13.6. `role` saja tidak cukup. Model FK harus nyata dan diuji, bukan ID teks bebas yang menerima semua tabel.
 - Untuk PKL, pembimbing/koordinator mengacu periode/penempatan PKL; untuk supervisi mengacu guru yang dinilai pada record supervisi; untuk alumni satu instalasi sekolah, tetap batasi data personal sesuai tindakan.
 - Admin mengelola penugasan dengan tanggal efektif tanpa kalender akademik. Tanggal akhir bersifat eksklusif; hanya rentang aktif yang memberi hak baru. Histori penugasan tetap tersimpan dan pencabutan berlaku mulai request berikutnya.
 - Konfirmasi/koreksi presensi lampau **tanpa tenggat**, tetapi tetap membutuhkan penugasan kelas saat ini atau delegasi eksplisit untuk data historis kelas tersebut. Guru yang sudah tidak bertugas tidak mendapat akses kekal; wali baru yang diberi kelas boleh menindaklanjuti rekap kelasnya.
@@ -255,7 +255,7 @@ Menu dibentuk dari **role + penugasan + hak tindakan + lisensi aktif**, bukan se
 
 **Alur bagian:** Daftar/Impor Siswa → Tempatkan Kelas → Simpan Histori → Naik/Pindah/Lulus dengan Konfirmasi.
 
-Bagian ini **wajib selesai dan diuji sebelum modul lain dibuat**. Kesalahan yang paling harus dihindari adalah hanya menyimpan `kelas_id` di tabel `siswa`, mengubahnya massal saat naik kelas, lalu kehilangan sejarah kelas dan membuat tagihan/alumni tidak sinkron.
+Fondasi identitas dan histori Core pada bagian ini **wajib selesai dan diuji sebelum modul memakainya**. Portal/riwayat mandiri alumni dan skenario Keuangan mengikuti rilis modul terkait, bukan syarat menunda R1; profil alumni dari kelulusan tetap fondasi Core. Kesalahan yang paling harus dihindari adalah hanya menyimpan `kelas_id` di tabel `siswa`, mengubahnya massal saat naik kelas, lalu kehilangan sejarah kelas dan membuat tagihan/alumni tidak sinkron.
 
 ## 5.1 Prinsip desain yang tidak boleh dilanggar
 
@@ -378,7 +378,7 @@ Tagihan saat kelas X tetap tertaut ke `siswa_id = 1001` dengan kelas/tarif histo
 | Kebutuhan | Implementasi minimal |
 |---|---|
 | Identitas operasi | `operasi_massal`: `id` UUID, `jenis`, `parameter` JSON, `status`, `total_item`, `dibuat_oleh`, timestamp. |
-| Identitas item | `item_operasi_massal`: `operasi_id`, `entitas_id`, `status`, `pesan_galat` ringkas, `diproses_pada`; unique `(operasi_id, entitas_id)`. |
+| Identitas item | `item_operasi_massal`: `operasi_id`, `kunci_entitas`, `status`, `galat_terakhir` ringkas, `diproses_pada`; UNIQUE (`operasi_id`, `kunci_entitas`). Kunci stabil dapat merujuk siswa existing atau baris impor; bukan semua operasi harus sudah punya ID siswa. |
 | Paralel terbatas | Javascript/Livewire memulai HTTP request berbeda dengan concurrency limit; PHP-FPM memproses request yang masuk, **bukan worker antrean**. |
 | Pengambilan batch | Backend **mengklaim** item `menunggu` secara atomik; dua request tidak boleh memproses item sama. |
 | Konsistensi | DB transaction **per siswa/item** untuk data yang saling bergantung; index/unique dan penguncian baris mencegah dua penempatan/tagihan/kelulusan. |
@@ -402,7 +402,7 @@ Jangan mengasumsikan semua siswa kelas XII langsung menjadi alumni. **SMK dapat 
 
 1. Admin membuka **Akademik → Kelulusan** dan memilih tahun ajaran serta siswa tingkat akhir yang memenuhi syarat program.
 2. Admin menandai hasil: **Lulus**, **Belum Lulus**, atau **Belum Diputuskan**. Sistem menampilkan sumber keputusan sekolah (nomor/tanggal SK bila tersedia) dan tanggal efektif lulus.
-3. Sistem menampilkan pratinjau siswa beserta **informasi tagihan belum lunas**. Tunggakan hanya informasi bagi bendahara, **tidak otomatis menghalangi kelulusan**.
+3. Sistem menampilkan pratinjau akademik siswa. **Rincian tunggakan hanya ditambahkan bila pengguna juga memiliki hak lihat keuangan siswa terkait**; Admin akademik tanpa hak tersebut tidak menerima nominal, indikator utang personal, atau endpoint keuangan tersembunyi. Bendahara tetap dapat melihat tunggakan melalui Keuangan. Tunggakan **tidak menghalangi kelulusan**, dan modul Keuangan nonaktif/tidak tersedia tidak menggagalkan proses akademik.
 4. Setelah konfirmasi, **hanya siswa Lulus** yang dibuatkan record `kelulusan` dan `profil_alumni` (relasi ke `siswa.id` yang sama), serta status siswa diperbarui menjadi `lulus`.
 5. Siswa **Belum Lulus** tetap berstatus siswa; jika melanjutkan tahun ajaran berikutnya, ia dapat ditempatkan ulang pada tingkat akhir melalui alur penempatan/tinggal kelas.
 6. Siswa **Belum Diputuskan** tidak diubah statusnya.
@@ -421,6 +421,33 @@ Jangan mengasumsikan semua siswa kelas XII langsung menjadi alumni. **SMK dapat 
 
 **Validasi:** kelas tujuan harus ada di tahun ajaran sama dan tingkat/program sesuai; penempatan lama berakhir tepat saat penempatan baru dimulai; tidak boleh ada dua kelas pada tanggal efektif yang sama. Absensi sebelum perpindahan tetap berasosiasi dengan kelas saat kejadian, bukan berubah mengikuti kelas sekarang. Jika siswa keluar lalu kembali **pada tahun ajaran yang sama**, gunakan kembali `kepesertaan_siswa` tahun tersebut dengan riwayat penempatan baru; jangan melanggar unique enrollment per tahun.
 
+### 5.6.1 Siswa tertunda saat pergantian tahun ajaran
+
+**Alur:** Tahun Baru Aktif → Temukan Siswa Belum Ditempatkan → Admin Tetapkan Keputusan → Preview Penempatan Sah → Simpan Histori → Guru Muat Ulang Daftar.
+
+- Aktivasi tahun ajaran baru tidak membuat penempatan/kelas baru secara otomatis. Siswa aktif yang belum memiliki penempatan pada tahun operasional tampil sebagai **Belum Ditempatkan** di Core beserta asal kelas dan tindakan admin; bukan dianggap keluar, lulus, atau tidak hadir.
+- Siswa tanpa penempatan tahun baru belum masuk daftar presensi kelas mana pun. Guru tidak boleh menambahkan ID siswa tersebut ke payload kelas atau memakai kelas lama diam-diam. Admin menyelesaikan keputusan naik/tinggal/penempatan dahulu. Bila pembelajaran telah berlangsung, admin boleh menetapkan tanggal efektif sesuai fakta, memeriksa overlap dan audit; ini bukan kalender akademik.
+- Setelah penempatan benar, layar guru memuat ulang daftar dan versi daftar berubah. Sesi hari ini dapat disimpan lengkap; presensi lampau yang terlewat mengikuti alur susulan wali kelas pada modul Absensi. Jangan menciptakan status H/A untuk hari sebelum sesi nyata tersedia.
+- Aktivasi tahun baru menampilkan jumlah siswa tertunda dan peringatan operasional, tetapi tetap boleh dilanjutkan setelah konfirmasi admin. Daftar tertunda tetap tersedia sampai setiap siswa memperoleh keputusan. Hasil tidak disembunyikan hanya karena tahun asal tidak aktif.
+
+### 5.6.2 Dua identitas siswa yang telanjur tercatat
+
+**Alur:** Temukan Kandidat Duplikat → Verifikasi Orang yang Sama → Pilih Identitas Utama → Tinjau Seluruh Dampak → Selesaikan Konflik → Konfirmasi Penggabungan Logis → Audit dan Verifikasi Laporan.
+
+- Hanya Admin Sekolah dengan hak khusus rekonsiliasi identitas dapat menjalankan proses. Kemiripan nama/NIS/NISN bukan alasan penggabungan otomatis. Verifikasi menggunakan arsip sekolah dan beberapa informasi identitas; tampilkan referensi bukti/alasan, bukan mempublikasikan data kandidat kepada siswa/alumni.
+- Pilih satu `siswa.id` sebagai identitas utama; ID lama tidak dihapus/didaur ulang. `penggabungan_identitas_siswa` menyimpan `siswa_asal_id` unik, `siswa_utama_id`, alasan, bukti verifikasi, aktor/waktu dan status. Larang penggabungan ke diri sendiri, siklus dan rantai ambigu; seluruh alias diselesaikan ke satu identitas utama.
+- Preview memeriksa seluruh relasi: akun dan relasi wali, enrolmen/penempatan/status/kelulusan, profil serta riwayat alumni, presensi/izin/pembinaan/BK/pelanggaran, PKL, tagihan/pembayaran, lamaran/tracer dan dokumen privat. Preview Admin rekonsiliasi hanya menunjukkan jumlah record dan referensi konflik sesuai haknya; nominal keuangan atau isi konseling tidak diberikan tanpa izin khusus. Koreksi data pembayaran/BK dilakukan lebih dahulu oleh petugas bidang yang berwenang, bukan dengan memberikan akses baru kepada Admin penggabungan. Tindakan tidak boleh selesai bila masih ada konflik akun, profil alumni ganda, enrolmen se-tahun yang bertentangan, rentang kelas overlap, presensi sesi ganda atau kunci tagihan ganda yang belum direkonsiliasi.
+- Riwayat operasional mempertahankan ID sumber dan bukti pelaku; aplikasi menggunakan pemetaan identitas utama untuk seluruh pencarian, otorisasi, pencegahan duplikasi dan agregasi lintas modul. Seluruh pemeriksaan kunci bisnis harus mencakup identitas utama beserta alias (misalnya siswa/jenis biaya/periode), bukan hanya ID tujuan, agar tagihan atau presensi untuk ID lama tidak dibuat ulang sesudah merge. Record konflik tidak dibuang, dijumlahkan atau ditimpa otomatis. Tetapkan mana record sah melalui koreksi modul masing-masing; tagihan/pembayaran yang benar-benar berbeda tetap utuh. Fitur baru menulis ke identitas utama saja. Setiap mutasi bisnis pascapenggabungan menyelesaikan alias dan mengunci identitas utama saat memeriksa kunci bisnis seluruh alias; transaksi penggabungan juga memakai lock utama yang sama. Jangan hanya mengandalkan UNIQUE fisik pada dua ID berbeda, agar request ID lama dan utama tidak sama-sama lolos.
+- Akun login utama dipilih secara eksplisit setelah verifikasi; akun duplikat dinonaktifkan dan sesi lama dicabut. Jangan memindahkan role/akun wali kepada orang berbeda atau membuka akses tanpa hubungan sah. Alumni duplikat mengikuti peninjauan profil/riwayat dan bukti penautan, bukan membuat siswa baru.
+- Simpan pemetaan dan keputusan rekonsiliasi secara atomik dengan lock kedua identitas dalam urutan ID; jika konflik berubah sebelum commit, batalkan seluruh tindakan dan ulangi preview. Sesudahnya verifikasi jumlah data/saldo/histori dan akses file. Permintaan membatalkan penggabungan menjadi proses koreksi khusus yang meninjau data baru, bukan menghapus pemetaan sembarangan.
+- Dua profil alumni lama dengan `siswa_id=NULL` ditangani oleh Pengelola Alumni berhak rekonsiliasi melalui **Verifikasi Identitas → Pilih Profil Utama → Preview Akun/Riwayat/Lamaran/Jawaban Tracer → Selesaikan Konflik → Konfirmasi Pemetaan → Verifikasi Akses**. Tidak membuat siswa fiktif. `penggabungan_profil_alumni` menyimpan FK profil asal/utama, UNIQUE asal, alasan/aktor/waktu dan larangan self/cycle; ID dan record sumber dipertahankan. Dua akun, dua lamaran lowongan sama atau dua jawaban periode sama wajib direkonsiliasi dengan mempertahankan bukti/versi, bukan menimpa data. Pemetaan, pemilihan akun utama dan pencabutan sesi akun duplikat atomik; query, otorisasi, laporan serta pencegahan duplikasi masa depan mencakup semua alias profil dengan lock profil utama pada transaksi; lamaran/tracer dari ID asal dan utama tidak boleh lolos bersamaan. Koreksi relasi privat tetap oleh role pemilik hak, bukan diperluas karena merge.
+
+### 5.6.3 Bukti penerimaan rekonsiliasi akademik
+
+- Kelulusan oleh Admin tanpa izin keuangan tidak memuat nilai utang pada HTML maupun respons JSON; bendahara berizin tetap dapat membuka laporannya. Modul Keuangan nonaktif tidak menghalangi kelulusan.
+- Tahun ajaran baru aktif dengan siswa tertunda: siswa tetap ditemukan di Core, belum masuk presensi kelas lama/tujuan sampai penempatan sah disimpan; penempatan baru mengubah versi daftar sehingga layar guru lama diminta muat ulang.
+- Penggabungan dua identitas siswa atau dua profil alumni lama dengan konflik relasi tidak dapat disahkan sebelum rekonsiliasi. Setelah sah, jumlah dan saldo data asli tidak hilang, query/constraint bisnis mencakup semua alias, izin siswa/wali tidak melebar, dan identitas sumber masih dapat ditelusuri. Tidak ada siswa fiktif untuk menggabungkan alumni lama.
+
 ## 5.7 Keuangan yang tetap konsisten dengan perubahan siswa
 
 Modul Keuangan menggunakan `siswa.id` sebagai penghubung ke siswa aktif maupun alumni. **Pembayaran tidak boleh disimpan sebagai kolom tunggal pada siswa.**
@@ -430,8 +457,8 @@ Modul Keuangan menggunakan `siswa.id` sebagai penghubung ke siswa aktif maupun a
 | `jenis_biaya` | `id`, `nama` | SPP, praktik, kegiatan, dan lainnya. |
 | `aturan_tarif` | `jenis_biaya_id`, `tahun_ajaran_id`, `tingkat` atau `kelas_id`, `nominal` | Tarif acuan untuk **tagihan baru**, bukan untuk menghitung ulang tagihan lama. |
 | `tagihan` | `id`, `siswa_id`, `tahun_ajaran_id`, `kepesertaan_siswa_id` nullable, `nama_kelas_saat_terbit`, `nama_biaya_saat_terbit`, `nominal_saat_terbit`, `tanggal_jatuh_tempo`, `status` | Tagihan yang sudah diterbitkan mempertahankan nilai/konteks meski kelas/tarif berubah; periode + jenis tagihan dipakai untuk cegah penerbitan ganda. |
-| `pembayaran` | `id`, `tagihan_id`, `nominal`, `dibayar_pada`, `metode`, `dibuat_oleh` | Pembayaran mengurangi saldo tagihan; koreksi tidak menghapus riwayat transaksi. |
-| `koreksi_pembayaran` *(bila diperlukan)* | `pembayaran_id`, `alasan`, `nominal`, `disetujui_oleh` | Jejak pembatalan/pembetulan dengan alasan. |
+| `pembayaran` | `id`, `tagihan_id`, `nominal`, `dibayar_pada`, `metode`, `dibuat_oleh` | Pembayaran sah membentuk penerimaan; pengembalian nyata dan koreksi administratif dibedakan pada §05.1/§12.4, tanpa menghapus riwayat. |
+| `koreksi_pembayaran`, `pengembalian_pembayaran`, `penyesuaian_tagihan` | Referensi tagihan/pembayaran, alasan, nominal/delta, pelaku dan waktu | Tiga jenis kejadian berbeda sesuai §12.4; snapshot awal tetap, uang nyata tidak dianggap kembali hanya karena void administratif. |
 
 Aturan proses yang harus diuji:
 
@@ -439,14 +466,14 @@ Aturan proses yang harus diuji:
 - Saat naik kelas, **tidak otomatis menerbitkan tagihan**; bendahara memilih tahun/kelas baru dan menekan **Buat Tagihan**. Validasi mencegah tagihan ganda pada siswa, jenis, dan periode yang sama. Pembayaran lebih besar dari sisa tagihan harus ditolak atau ditangani lewat prosedur koreksi terkontrol.
 - Ketika tarif diubah, tagihan yang sudah diterbitkan **tidak ikut dihitung ulang**.
 - Ketika siswa lulus atau pindah sekolah, **tunggakan tetap bisa dicari** melalui nama/NIS/riwayat siswa; pembayaran tetap dapat dicatat jika secara kebijakan diperbolehkan.
-- Tagihan lunas tidak boleh menjadi belum lunas karena perubahan status akademik. Nilai tagihan, total pembayaran, dan sisa ditentukan oleh transaksi, bukan kelas siswa terkini.
+- Tagihan lunas tidak boleh berubah karena status akademik. Perubahan saldo hanya melalui pembayaran, pengembalian nyata atau penyesuaian sah yang diaudit sesuai modul Keuangan; tidak karena kelas siswa terkini.
 - Tidak menggunakan `ON DELETE CASCADE` dari siswa ke tagihan, pembayaran, alumni, PKL, atau absensi historis.
 
 ## 5.8 Penghubung modul lain dan snapshot historis
 
 | Modul | Identitas utama | Data historis yang harus dipertahankan |
 |---|---|---|
-| Absensi Siswa | `siswa_id` + tanggal + tahun ajaran | Kelas/penempatan saat absensi; jangan berubah sesudah mutasi kelas. |
+| Presensi Siswa | `siswa_id` + `sesi_pelajaran_id` (kelas/tanggal/jam) | Simpan penempatan, pengajar dan mapel saat kejadian; sumber guru/izin/hasil klarifikasi serta versi konfirmasi ditelusuri, bukan satu status harian yang menimpa jam lain. |
 | Perizinan Siswa | `siswa_id` + rentang tanggal | Status izin dan keputusan; satu sesi/jam tidak boleh punya dua presensi siswa yang bertentangan; izin boleh mencakup sebagian jam. |
 | PKL | `siswa_id` + periode penempatan | Lokasi PKL, guru pembimbing, jurnal dan nilai di periode itu. |
 | BK & Pelanggaran | `siswa_id` + tanggal kejadian | Catatan tetap pada identitas yang sama tanpa ikut pindah kelas; tampilan laporan historis memakai kelas saat peristiwa. |
@@ -602,6 +629,18 @@ Aturan proses yang harus diuji:
 
 **Aturan penting.** Tidak ada akun/approval digital pembimbing industri; tanda tangan fisik tetap mengikuti prosedur sekolah. Nilai final yang dikoreksi harus memiliki alasan dan riwayat.
 
+### 01.1 Perubahan dan penghentian PKL
+
+**Alur perubahan:** Koordinator Pilih Penempatan → Periksa Kuota/Rentang → Tetapkan Tanggal Efektif → Tutup Segmen Lama → Buka Segmen Baru → Verifikasi Histori dan Laporan.
+
+- Kuota mitra diperiksa per periode dan rentang penempatan aktif dengan transaksi/lock saat menetapkan siswa; kuota penuh menolak penempatan baru dan menampilkan alternatif, bukan menyisipkan peserta melebihi kapasitas. Siswa tidak boleh memiliki penempatan PKL aktif yang waktunya overlap.
+- Perpindahan mitra atau pembimbing membentuk segmen riwayat baru dengan tanggal efektif, alasan dan aktor. Jurnal/kehadiran/monitoring/nilai tetap merujuk segmen asal dan tidak berpindah ke mitra atau pembimbing baru. Kuota dihitung pada rentang segmen; perubahan efektif tidak menimpa histori.
+- Pembimbing pengganti mendapat hak sesuai segmen atau delegasi historis yang dinyatakan; pembimbing lama tidak memiliki akses mutasi kekal. Koordinator dapat menetapkan delegasi untuk melengkapi/koreksi catatan segmen lama tanpa memalsukan pelaku.
+- Pembatalan sebelum mulai mengarsipkan penempatan dengan alasan dan melepas kuota. Jika PKL sudah berjalan, gunakan **Dihentikan** dengan tanggal akhir dan alasan, bukan hapus penempatan. Catatan yang telah terjadi tetap dapat dilaporkan; kelanjutan siswa menggunakan segmen baru bila diperlukan.
+- Nilai final dikunci. Koreksi memakai **Ajukan Koreksi → Koordinator Buka Revisi Beralasan → Guru Pembimbing Isi Versi Baru → Koordinator Finalisasi Ulang**. Nilai lama, nama penilai kertas, tanggal dan alasan revisi tetap tersimpan; laporan membedakan versi final terkini dari versi yang digantikan.
+- Status penempatan minimal Draf/Aktif/Selesai/Dibatalkan/Dihentikan; status nilai minimal Belum Diinput/Draf/Final/Dalam Revisi. Status tambahan ini melengkapi daftar status ringkas di atas, bukan penghapusan histori.
+- Tidak ada penempatan/penilaian otomatis hanya karena kerja sama HUBIN berakhir. Koordinator memutuskan kelanjutan berdasarkan kondisi nyata; industri tetap tidak memiliki akun.
+
 ## 02. Jurnal Kegiatan Harian Guru
 
 **Tujuan.** Guru wajib menuliskan **hari ini mengerjakan apa dan hasilnya apa**, bukan laporan per jadwal mengajar. Kegiatan boleh mengajar, menyiapkan materi, mengoreksi tugas, membimbing siswa, rapat, administrasi atau tugas lain. Kegiatan tidak mengajar tetap sah. Tidak ada ketergantungan jadwal, kalender akademik atau pengisian presensi.
@@ -613,7 +652,7 @@ Aturan proses yang harus diuji:
 | Isian wajib | Tanggal kegiatan, uraian pekerjaan dan hasil pekerjaan. Satu jurnal per guru per tanggal, boleh berisi beberapa rincian kegiatan. Hasil boleh menjelaskan pekerjaan masih berlangsung dan capaian aktual; jangan memaksa klaim selesai. |
 | Isian opsional | Kategori kegiatan, rentang jam, kelas/mapel bila relevan, kendala, rencana tindak lanjut dan lampiran. Tidak wajib memilih kelas/mapel atau mengisi materi mengajar. |
 | Pengisian | Guru hanya mengelola jurnal sendiri. Default tanggal hari ini; tanggal lampau boleh untuk melengkapi kegiatan sebenarnya, tidak boleh tanggal masa depan. Larangan memilih tanggal hanya berlaku pada presensi, bukan jurnal. |
-| Status | Draf → Terkirim → Perlu Perbaikan / Diperiksa. Draf bukan laporan terkirim. Koreksi jurnal terkirim menyimpan alasan, waktu dan aktor dalam audit. |
+| Status | Draf → Terkirim → Perlu Perbaikan / Diperiksa. Draf bukan laporan terkirim. Koreksi jurnal terkirim menyimpan alasan, waktu dan aktor dalam audit; bila sebelumnya Diperiksa, versi baru kembali Terkirim dan pemeriksaan lama tetap tercatat untuk versi asal. Pimpinan yang ditugaskan dapat mengembalikan jurnal menjadi Perlu Perbaikan dengan catatan; hanya guru pemilik mengubah isinya. |
 | Monitoring | Pimpinan kurikulum melihat jurnal yang ada, tanggal, isi/hasil dan status; dapat meminta perbaikan. Tanpa kalender, sistem **tidak menebak** hari kerja wajib dan tidak menyatakan guru melanggar karena tidak ada jurnal pada hari tertentu. Filter tanggal menghasilkan daftar catatan, bukan skor kepatuhan jadwal. |
 | Lisensi | Tetap kode `jurnal_guru`; kewajiban melalui aplikasi berlaku pada sekolah yang mengaktifkan modul. Tidak memblokir presensi, tidak membuat presensi guru dan tidak memerlukan modul Jadwal. |
 | Rekap | Per guru/periode/kategori; tampilkan kegiatan dan hasil, bukan persentase kehadiran guru. Hak lihat mengikuti penugasan pimpinan. |
@@ -643,7 +682,7 @@ Aturan proses yang harus diuji:
 2. Payload berisi ID sesi, versi, kunci idempotensi, dan **seluruh** siswa serta H/S/I/A. Server memeriksa tanggal hari ini, guru berizin, lisensi, kesesuaian sesi, ID tidak ganda, tidak ada siswa hilang/tambahan, serta nilai status sah. Jangan memfilter baris invalid lalu menyimpan sisanya.
 3. Di dalam satu transaksi MariaDB, kunci sesi, cek ulang versi daftar/izin/presensi, simpan semua baris dan status pengiriman. Bila satu baris gagal atau daftar/izin berubah, **rollback seluruh pengiriman** dan minta muat ulang; tidak ada sukses parsial.
 4. Respons sukses hanya dikirim setelah commit dan verifikasi jumlah/himpunan baris tersimpan sama dengan yang diharapkan. Tampilkan **35 dari 35 siswa tersimpan**, H/S/I/A dan waktu simpan. Angka 35 hanya contoh; jumlah mengikuti daftar sebenarnya.
-5. Tombol dinonaktifkan saat mengirim. Double-click, dua tab atau retry memakai kunci idempotensi yang sama mengembalikan hasil tersimpan, tidak menggandakan data. Sesi sudah berubah dari tab lain menghasilkan konflik versi, bukan last-write-wins.
+5. Status H/S/I/A efektif dan sumbernya dibedakan dari observasi independen guru sesuai §03.3.1; nilai S/I prefill tidak membuat observasi dasar fiktif. Tombol dinonaktifkan saat mengirim. Double-click, dua tab atau retry memakai kunci idempotensi yang sama mengembalikan hasil tersimpan, tidak menggandakan data. Sesi sudah berubah dari tab lain menghasilkan konflik versi, bukan last-write-wins.
 6. Jika timeout/koneksi terputus, tampilkan **Status simpan belum diketahui**; periksa hasil token di server sebelum retry. Pertahankan input belum terkirim selama halaman tetap terbuka, dan jangan menampilkan toast sukses tanpa bukti commit. Tidak ada janji mode offline atau menyimpan data siswa sensitif ke localStorage.
 7. Jika request dibuat sebelum tengah malam dan diterima setelah berganti hari, tolak tanggal lama dengan pesan muat ulang Presensi Hari Ini. Waktu server saat validasi transaksi menjadi acuan; jangan menggeser hasil ke tanggal baru diam-diam.
 
@@ -657,6 +696,23 @@ Aturan proses yang harus diuji:
 - **Konfirmasi wali kelas tanpa batasan waktu.** Wali kelas dapat membuka rekap tanggal lampau, memeriksa satu kelas/hari, memilih semua catatan yang sesuai dan mengonfirmasi sekaligus. Tidak ada tenggat, kedaluwarsa, konfirmasi otomatis atau hukuman karena terlambat konfirmasi.
 - Guru hanya mengisi/mengoreksi presensi hari ini. Kesalahan data lampau dilaporkan kepada wali kelas; wali kelas berwenang melakukan koreksi beralasan dengan audit, tanpa mengubah tanggal sesi. Admin hanya dapat membantu bila diberi delegasi koreksi eksplisit; tidak membuat sesi lampau atas nama guru tanpa jejak.
 - Status kehadiran H/S/I/A berbeda dari status pemeriksaan Dikirim/Perlu Klarifikasi/Dikonfirmasi. Belum Diisi berarti sesi/baris belum dikirim, bukan A. Riwayat koreksi dan konfirmasi terdahulu tetap dapat ditelusuri.
+
+### 03.3.1 Sumber status, izin bertumpuk, pembatalan dan susulan
+
+**Alur konflik izin:** Terima Catatan Baru → Periksa Rentang dan Status Lama → Wali Klarifikasi bila Berbeda → Tetapkan Sumber Berlaku → Simpan Atomik → Konfirmasi Ulang Catatan yang Berubah.
+
+- Bedakan `status_dasar_guru` (observasi guru yang independen, nullable bila belum ada), `izin_siswa_id` yang sedang berlaku dan keputusan klarifikasi wali kelas. Payload dan server memisahkan observasi guru dari status efektif turunan izin: radio S/I yang terisi otomatis **tidak disalin menjadi status dasar guru** saat simpan seluruh kelas. Server memverifikasi sumber terhadap snapshot/versi izin, bukan percaya label sumber dari klien. Bila hanya prefill izin yang tersedia, dasar tetap NULL; pembatalan izin mengembalikan Belum Diisi bila tidak ada keputusan sah lain. H default sebelum kirim bukan pengamatan faktual atau konflik dengan izin. Saat guru menegaskan H untuk siswa tanpa izin melalui simpan kelas, barulah H menjadi observasi tersimpan. `status_kehadiran` adalah hasil efektif yang ditampilkan, bukan tempat menimpa semua sumber. Audit menyimpan status/sumber sebelum dan sesudah perubahan.
+- Satu siswa tidak boleh memiliki dua izin **berlaku** yang berbeda pada waktu sama. Catatan S/I identik dan rentang sama diperlakukan sebagai duplikat, bukan izin kedua. Rentang baru yang tumpang tindih diperlihatkan kepada wali; wali memilih koreksi izin yang ada, memecah rentang, atau mengganti sumber dengan alasan. Jangan memakai aturan otomatis “yang terbaru menang” atau S selalu mengalahkan I.
+- Bila tidak ada konflik, S/I sah langsung berlaku pada sesi yang dicakup tanpa persetujuan pejabat kedua. Bila catatan guru H berlawanan dengan izin S/I, tampilkan **Perlu Klarifikasi**, pertahankan informasi sumber dan minta wali menetapkan keadaan sebenarnya; guru tidak menghapus sumber izin dengan radio H. Keputusan wali dapat menegaskan H/S/I/A dan cakupan jamnya dengan alasan.
+- Membatalkan/mengubah izin mewajibkan alasan dan pemeriksaan dampak. Bila ada status dasar guru sah dan tidak ada sumber lain yang bertentangan, hitung kembali dari status dasar itu; jika sumber lain bertentangan, minta klarifikasi; bila belum ada input guru dan tidak ada keputusan wali, kembali **Belum Diisi**, bukan otomatis H atau A. Catatan izin dan keputusan lama tidak dihapus.
+- Klarifikasi wali terikat pada versi sumber yang diperiksa. Bila izin/sumber berubah lagi, keputusan lama tidak diterapkan diam-diam; tandai klarifikasi/konfirmasi ulang. Mutasi izin, sumber efektif dan versi sesi diproses atomik agar kiriman guru versi lama ditolak utuh. Konfirmasi wali kelas tetap tanpa tenggat.
+
+**Alur sesi susulan:** Laporkan Sesi Terlewat → Wali/Delegasi Periksa Kejadian dan Peserta Historis → Buat atau Lengkapi Sesi Susulan → Isi Seluruh Daftar → Simpan Atomik → Konfirmasi dan Audit.
+
+- Bila hari telah berganti dan sesi sama sekali belum dibuat, guru hanya menyampaikan permintaan susulan dengan kelas/mapel/jam/tanggal kejadian dan alasan; form presensi guru tetap hanya hari ini. Wali kelas atau pengguna dengan delegasi koreksi historis yang eksplisit boleh membuat sesi susulan pada tanggal kejadian, bukan menggesernya ke hari ini.
+- Wali/delegasi memeriksa pengajar/penugasan pada tanggal kejadian, daftar siswa berdasarkan penempatan historis, sumber izin dan bukti secukupnya; lampiran tidak wajib. Sesi diberi `jenis_pencatatan=susulan`, aktor pencatat, pengajar sebenarnya, alasan serta waktu pencatatan. Jangan mengaku guru lama telah mengirim bila pencatatnya wali/delegasi.
+- Penyimpanan sesi susulan tetap mencakup semua siswa dalam satu transaksi dengan token, lock/versi dan bukti jumlah yang sama seperti pengiriman kelas biasa. Tanggal historis hanya diterima endpoint berizin susulan, bukan endpoint guru hari ini. Unique sesi kelas/tanggal/jam mencegah sesi susulan ganda.
+- Bila daftar peserta atau status tidak dapat dibuktikan, simpan permintaan Perlu Klarifikasi dan jangan mengisi otomatis seluruh siswa H/A. Sesi kosong hanya berarti Belum Diisi. Konfirmasi sesudah pemeriksaan dapat dilakukan wali pencatat yang sah; tidak perlu aktor kedua atau batas waktu.
 
 ### 03.4 Penanganan bersama BK
 
@@ -679,7 +735,7 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 | Surat masuk       | Nomor, tanggal, pengirim, perihal; file opsional.                     |
 | Surat keluar      | Nomor, tanggal, tujuan, perihal; pilih pencatatan saja/editor/upload. |
 | Template          | Kop dan isi surat sederhana bila memakai editor.                      |
-| Penomoran         | Nomor unik untuk surat keluar final.                                  |
+| Penomoran         | Nomor final unik untuk surat yang diterbitkan sistem; nomor surat eksternal dicatat apa adanya dengan lingkup sumber yang jelas.                                  |
 | Arsip & pencarian | Filter tanggal, jenis, perihal; lihat/unduh jika ada file.            |
 | Laporan           | Buku agenda dan rekap surat.                                          |
 
@@ -691,15 +747,30 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **3.** Surat keluar yang perlu persetujuan diajukan ke pejabat; jika surat hanya diarsipkan, ikuti izin petugas.
 >
-> **4.** Nomor final ditetapkan sekali ketika surat keluar disahkan, lalu tercatat di buku agenda.
+> **4.** Surat keluaran sistem memperoleh nomor final sekali setelah pengesahan; surat eksternal yang hanya diarsipkan mempertahankan nomor asal. Keduanya tercatat di buku agenda dengan sumber nomor yang jelas.
 >
 > **5.** TU melakukan pencarian dan cetak/unduh laporan.
 
-**Status.** Surat keluar: Draft → Diajukan → Disetujui / Revisi → Arsip. Surat masuk: Dicatat → Arsip.
+**Status.** Surat keluaran sistem: Draf → Diajukan → Revisi / Disahkan → Arsip; surat final dapat Dibatalkan dengan alasan. Surat eksternal: Dicatat → Arsip / Dibatalkan. Arsip bukan penghapusan dan tidak menghilangkan status sah/batal.
 
 **Hasil.** Buku agenda dan surat digital bila ada.
 
 **Aturan penting.** Tanpa file tetap valid; metadata wajib: nomor jika tersedia, tanggal, pihak terkait dan perihal. Hindari nomor surat ganda.
+
+### 04.1 Sumber nomor, koreksi dan pembatalan surat
+
+**Alur keluaran sistem:** TU Buat Draf → Pejabat Sahkan bila Diperlukan → Sistem Tetapkan Nomor Final → Terbit/Arsip → Koreksi Terlacak atau Batalkan Beralasan.
+
+**Alur arsip eksternal:** TU Pilih Arsip Eksternal → Catat Nomor Asli/Sumber → Periksa Duplikasi → Simpan Metadata/File Opsional → Arsip.
+
+- `asal_surat` membedakan `keluaran_sistem` dari `arsip_eksternal`; `arah_surat` membedakan masuk/keluar. Surat keluar yang sudah diterbitkan secara manual di luar aplikasi tetap masuk arsip eksternal, bukan diberi nomor sistem baru. Nomor asli boleh kosong jika memang tidak tersedia, dengan alasan; nomor tidak boleh direka agar form lolos.
+- Nomor sistem dialokasikan di transaksi saat finalisasi, memakai urutan unik per jenis/tahun sesuai format sekolah. Dua pengesahan bersamaan tidak mendapat nomor sama; retry finalisasi mengembalikan nomor yang sudah terbit. Draf tidak menghabiskan nomor final.
+- Nomor eksternal disimpan dengan pengirim/instansi, tanggal dan identitas arsip. Nomor sama dari dua instansi tidak otomatis dianggap duplikat; kombinasi sumber/arah/nomor/tanggal yang sama memunculkan kandidat untuk diperiksa TU. Jangan menghapus arsip lama hanya karena nomor mirip.
+- Surat disahkan tidak diedit diam-diam. Koreksi metadata/isi membuat revisi dengan alasan, aktor, waktu dan snapshot isi/file sebelumnya. Pejabat meninjau ulang jika isi yang membutuhkan pengesahan berubah. Revisi tidak mengganti nomor final; jika sekolah membutuhkan surat pengganti bernomor baru, terbitkan record baru dengan relasi `menggantikan_surat_id`, dan tandai surat lama digantikan.
+- Hanya TU/petugas berhak membatalkan; bila surat membutuhkan pengesahan, pejabat berwenang menyetujui pembatalan. Nomor surat final yang batal **tidak pernah digunakan ulang**; alasan, tanggal dan pelaku tetap di agenda. File privat lama dipertahankan sesuai retensi dan akses arsip.
+- Lampiran tetap opsional. Surat yang dibatalkan tidak tampil sebagai surat sah dalam cetak/unduh; tampilkan penanda batal. Penolakan, revisi atau nomor gagal tidak menghasilkan status Terbit palsu.
+
+**Penerimaan:** arsip surat manual nomor 001 tetap nomor 001; dua instansi dengan nomor sama dapat diarsipkan terpisah; pengesahan paralel tidak ganda; pembatalan final tidak membebaskan nomor; surat tanpa file tetap valid.
 
 ## 05. Keuangan & SPP
 
@@ -730,11 +801,29 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **5.** Bendahara melihat tunggakan siswa aktif maupun alumni, serta mencetak kuitansi/laporan.
 
-**Status.** Tagihan: Belum Bayar → Sebagian → Lunas. Pembetulan dicatat sebagai koreksi.
+**Status.** Saldo tagihan aktif: Belum Bayar → Sebagian → Lunas. Status administrasi terpisah: Aktif / Menunggu Penyelesaian / Dibatalkan. Pembayaran: Sah / Dibatalkan Administratif; pengembalian uang memiliki bukti terpisah.
 
 **Hasil.** Buku pembayaran, kuitansi, tunggakan lintas tahun.
 
 **Aturan penting.** Tidak ada pembayaran gateway pada MVP. Pembatalan/koreksi tidak boleh menghilangkan rekam audit.
+
+### 05.1 Tagihan salah, pembayaran salah dan pengembalian uang
+
+**Alur koreksi tanpa uang diterima:** Temukan Kesalahan → Bendahara Tinjau Bukti → Petugas Berhak Setujui Koreksi → Simpan Pembalik/Penyesuaian Ber-audit → Hitung Saldo → Cetak Hasil dengan Riwayat.
+
+**Alur pembatalan dengan uang nyata:** Usulkan Pembatalan → Bekukan Penerimaan Baru pada Tagihan → Verifikasi Uang Diterima → Kembalikan Uang di Luar Aplikasi → Catat Bukti Pengembalian → Sahkan Pembatalan → Simpan Arsip.
+
+- Nilai, kelas dan tarif saat penerbitan tidak diedit. Kesalahan penerbitan dibetulkan melalui `penyesuaian_tagihan` dengan alasan dan bukti, bukan mengubah `nominal_saat_terbit`. Penyesuaian bertanda positif/negatif membentuk jumlah tagihan efektif; riwayat penerbitan tetap dapat dicetak. Ini koreksi tagihan sederhana, bukan modul akuntansi umum atau otomatisasi beasiswa.
+- Tagihan salah siswa tidak dipindah FK-nya. Selesaikan/batalkan tagihan lama dan terbitkan tagihan pada siswa yang benar. Tagihan yang salah nominal pada siswa sama memakai penyesuaian pada identitas tagihan yang sama; tidak membuat dua tagihan untuk kunci bisnis sama. Salah periode mengikuti pembatalan tagihan lama dan penerbitan pada periode benar.
+- Pembayaran salah ketik/pencatatan ganda yang **tidak mewakili uang nyata** boleh dibatalkan administratif oleh petugas dengan hak koreksi, lalu input record pengganti bila diperlukan. Nomor kuitansi lama tidak dipakai ulang dan cetak lama ditandai batal. Catatan nominal/metode/tanggal asli tetap ada; koreksi tidak menghapus transaksi.
+- Bila uang benar-benar diterima, jangan menyebut pembatalan administratif sebagai pengembalian uang. Pengembalian terjadi manual di luar aplikasi, baru dicatat sebagai `pengembalian_pembayaran` dengan nominal, tanggal, penerima, metode, referensi pembayaran dan bukti/nomor dokumen. Tidak ada payment gateway dan tidak ada transfer dana otomatis.
+- Petugas dengan hak `keuangan.koreksi`/`keuangan.pengembalian` menyetujui tindakan sensitif sesuai penugasan; Bendahara biasa hanya mengajukan. Sekolah boleh menugaskan hak tersebut kepada Bendahara yang sama; sistem tidak menambah jabatan baru, tetapi memisahkan izin tindakan dan merekam persetujuannya. Nilai sebelum/sesudah wajib ditampilkan pada konfirmasi.
+- Untuk membatalkan tagihan dengan pembayaran nyata, tandai Menunggu Penyelesaian dan tolak penerimaan pembayaran baru. Pembatalan final hanya bila seluruh penerimaan neto sudah nol setelah pengembalian yang sah. Pengembalian parsial diperbolehkan tetapi tagihan belum menjadi Dibatalkan sampai rekonsiliasi nol; jangan menghilangkan kewajiban uang yang masih harus dikembalikan.
+- Pengembalian dibatasi uang sah yang belum dikembalikan, nominal positif dan tidak boleh ganda. Kunci tagihan/pembayaran dalam urutan konsisten dan pakai kunci idempotensi. Pengembalian yang salah dibetulkan lewat record pembalik dengan alasan/bukti, bukan menghapus bukti uang keluar. Arah `keluar` mengurangi penerimaan neto; arah `pembalik` membalik dampak record asal, maksimal bagian yang belum dibalik. Pembalik administratif atas catatan yang tidak pernah terjadi harus dibedakan dari uang yang benar-benar diterima kembali sekolah dan disertai bukti klarifikasi; jangan mengklaim terjadi arus kas baru tanpa kejadian nyata. Pembalik hanya boleh commit jika seluruh invariant saldo tetap sah. Pada tagihan yang sudah final Dibatalkan, pembalik pengembalian wajib sekaligus membuka kembali record tagihan dan membalik penyesuaian pembatalannya dalam transaksi yang sama, lalu memvalidasi ulang saldo; jika tidak dapat dipenuhi, tolak seluruh tindakan. Tagihan Dibatalkan tidak boleh memiliki penerimaan neto di atas nol.
+- Pembatalan final menambahkan penyesuaian pembatalan sebesar sisa tagihan efektif hingga nol. Kunci siswa/jenis/periode tetap milik record yang sama. Bila pembatalan keliru, petugas koreksi dapat membuka kembali record tersebut dengan pembalik penyesuaian pembatalan dan audit; tidak menghapus status historis pembatalan atau menerbitkan tagihan ganda.
+- Modul nonaktif tetap mengizinkan baca/ekspor arsip sesuai hak, tetapi tidak menerima pembayaran, koreksi atau pengembalian baru sampai aktif kembali. Pembatalan/refund tidak dipicu perubahan kelas, kelulusan atau perubahan lisensi.
+
+**Penerimaan:** salah tagihan belum dibayar dapat dikoreksi tanpa mengubah snapshot; kuitansi salah tanpa uang nyata dapat dibatalkan administratif; penerimaan nyata harus diselesaikan dengan pengembalian tercatat; dua pengembalian paralel tidak melebihi uang tersisa; tagihan batal tetap ada dalam arsip dan tidak muncul sebagai tunggakan aktif.
 
 ## 06. BKK & Lowongan Kerja
 
@@ -765,11 +854,24 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **5.** Alumni mengisi riwayat kerja setelah benar-benar mulai bekerja; admin mengunduh laporan.
 
-**Status.** Lowongan: Aktif/Arsip. Lamaran: Diajukan → Diproses → Diterima/Ditolak.
+**Status.** Lowongan: Draf → Aktif → Ditutup / Dibatalkan → Arsip. Lamaran: Diajukan → Diproses → Diterima / Ditolak / Ditarik; pembatalan lowongan menandai lamaran Belum Selesai sebagai Lowongan Dibatalkan, bukan Ditolak.
 
 **Hasil.** Database lowongan dan rekap penempatan.
 
 **Aturan penting.** Perusahaan tidak diwajibkan memiliki akun untuk MVP. Pendaftaran alumni tidak mensyaratkan adanya siswa di Core System; mekanisme §5.10 wajib diterapkan.
+
+### 06.1 Batas lamaran, penutupan dan koreksi hasil
+
+**Alur:** Terbitkan Lowongan → Alumni Kirim Satu Lamaran → Pengelola Proses → Catat Hasil → Alumni Konfirmasi Pekerjaan bila Mulai Bekerja; atau Alumni Tarik Lamaran / Pengelola Batalkan Lowongan dengan Alasan.
+
+- Satu profil alumni hanya satu lamaran per lowongan, dibatasi UNIQUE (`lowongan_kerja_id`, `profil_alumni_id`). Lamaran ditarik tetap menjadi record yang sama. Sebelum batas waktu, alumni boleh mengajukan ulang pada record tersebut setelah konfirmasi dengan riwayat penarikan; tidak membuat record kedua. Hasil final Diterima/Ditolak tidak dapat dibuka ulang sendiri oleh alumni.
+- Pelamar siswa tingkat akhir opsional memakai identitas siswa sah dengan kunci unik siswa/lowongan yang terpisah; setelah menjadi alumni, penautan mempertahankan satu identitas lamaran dan menolak duplikasi. Kode aplikasi tidak mewajibkan siswa fiktif bagi alumni lama.
+- Batas waktu disimpan eksplisit dalam waktu sekolah dan diuji di server pada setiap kirim/ajukan ulang. Saat `sekarang >= batas_lamaran`, tolak lamaran baru meskipun status UI masih Aktif. Pada GET, tampilkan status efektif Ditutup dari batas waktu tanpa menulis database; pembaruan status tersimpan hanya melalui request mutasi terotorisasi yang relevan. Tidak memerlukan Scheduler. Tutup manual sebelum tenggat memerlukan alasan.
+- Perubahan syarat setelah ada pelamar disimpan sebagai revisi; lamaran menyimpan snapshot syarat/posisi saat dikirim. Pengelola tidak mengubah lowongan lama menjadi posisi lain diam-diam; posisi berbeda dibuat lowongan baru. Perpanjangan batas waktu diaudit dan berlaku hanya untuk kiriman setelah perubahan.
+- Alumni hanya menarik lamaran sendiri yang Diajukan/Diproses dengan alasan opsional. Pengelola berizin boleh membatalkan lowongan; hasil final yang sudah dicatat dipertahankan sebagai histori, tidak otomatis diubah ke Ditolak atau menghapus riwayat pekerjaan alumni.
+- Koreksi hasil seleksi dilakukan Pengelola Alumni berizin dengan alasan, sumber konfirmasi perusahaan, status lama/baru dan waktu. Diterima tidak otomatis menambah riwayat pekerjaan aktif; pekerjaan dicatat setelah alumni/petugas memverifikasi tanggal benar-benar mulai bekerja.
+
+**Penerimaan:** double-submit hanya satu lamaran; tenggat lewat ditolak tanpa cron; penarikan/ajukan ulang tidak menggandakan; hasil yang dikoreksi tetap punya jejak dan tidak mengubah tracer historis.
 
 ## 07. Inventaris & Sarpras
 
@@ -781,7 +883,7 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 
 | **Fitur inti**      | **Subfitur / cakupan**                                   |
 |---------------------|----------------------------------------------------------|
-| Master aset bersama | Kode unik, nama, kategori, jumlah/unit, lokasi, kondisi. |
+| Master aset bersama | Satu kode unik per unit fisik, nama, kategori, lokasi dan kondisi; jumlah inventaris dihitung dari unit, bukan kolom stok aset. |
 | Peminjaman          | Peminjam, tanggal, barang, pengembalian.                 |
 | Perubahan kondisi   | Rusak/perbaikan; catatan riwayat.                        |
 | Laporan             | Per lokasi, kondisi, dan peminjaman.                     |
@@ -796,15 +898,31 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **4.** Waka Sarpras melihat rekap aset seluruh ruangan, termasuk lab.
 
-**Status.** Aset: Baik/Rusak/Perbaikan. Peminjaman: Dipinjam → Dikembalikan.
+**Status.** Kondisi aset: Baik/Rusak/Perbaikan/Hilang/Dihapuskan. Ketersediaan pinjam dihitung terpisah dari kondisi dan pinjaman aktif. Permohonan: Diajukan → Disetujui / Ditolak / Dibatalkan; serah-terima per unit: Dipinjam → Dikembalikan / Penyelesaian Kehilangan.
 
 **Hasil.** Data aset tunggal dan laporan inventaris.
 
 **Aturan penting.** Aset lab bukan salinan: modul Sarpras dan Lab memakai ID aset yang sama. Peralatan tetap memakai master aset; bahan habis pakai memakai catatan stok terpisah. Jika Lab aktif tetapi Sarpras tidak, petugas Lab tetap dapat mengelola aset Lab melalui antarmuka Lab terbatas.
 
+### 07.1 Unit aset, pengembalian sebagian dan kehilangan
+
+**Alur:** Pilih Unit Aset → Ajukan Pinjam → Petugas Setujui → Serah Terima per Unit → Kembalikan Sebagian/Semua → Periksa Kondisi → Tutup Pinjaman atau Tindak Lanjuti Kehilangan.
+
+- `aset` selalu satu baris per unit yang dapat dipinjam; tiga laptop mempunyai tiga ID/kode. Stok kuantitas hanya untuk bahan habis pakai di Lab. Pengelompokan model/kategori tidak mengubah identitas individual.
+- Satu permohonan dapat memuat beberapa `rincian_peminjaman_aset`. Saat serah-terima, validasi ulang izin unit, kondisi, dan tidak ada pinjaman aktif lalu kunci unit. Status persetujuan belum berarti barang telah diserahkan; pembatalan sebelum serah-terima tidak membuat catatan pengembalian palsu.
+- Pengembalian dicatat per unit, tanggal, penerima dan kondisi. Dua dari tiga laptop kembali berarti dua rincian selesai dan satu tetap Dipinjam; status header Sebagian Dikembalikan. Hanya unit yang benar-benar kembali tersedia lagi. Retry tidak menutup unit dua kali.
+- Unit rusak yang kembali diterima dengan kondisi Rusak/Perbaikan serta catatan; pinjamannya dapat selesai, tetapi unit tidak dapat dipinjam lagi sampai petugas mencatat perbaikan selesai. Jangan menganggap semua pengembalian otomatis Baik.
+- Unit hilang tidak ditandai Dikembalikan. Petugas mencatat kejadian, penanggung jawab dan hasil penyelesaian; status unit Hilang dan rincian Penyelesaian Kehilangan. Penutupan tanpa barang kembali membutuhkan hak penyelesaian aset dan alasan/bukti. Penggantian barang menjadi aset baru dengan referensi kejadian, bukan mengganti identitas unit lama.
+- Penghapusan aset adalah status Dihapuskan melalui petugas berhak dan audit, bukan DELETE. Tidak boleh menghapuskan unit yang masih berstatus Dipinjam tanpa menyelesaikan kejadian. Dokumen pertanggungjawaban/biaya, bila ada, dicatat sebagai informasi; penagihan/ganti rugi otomatis tidak menjadi fitur MVP.
+- Pemindahan lokasi/kewenangan unit tidak menghilangkan jejak peminjam dan petugas asal. Petugas pengganti mendapat akses melalui penugasan/delegasi, bukan mengubah aktor lama. Semua perubahan langsung terlihat di Sarpras dan Lab yang aktif sesuai lingkup.
+
+**Penerimaan:** tiga unit dipinjam, dua kembali dan satu hilang menghasilkan status per unit yang benar; unit hilang/rusak tidak tersedia; dua petugas bersamaan tidak menyerahkan aset sama ke dua peminjam; histori tetap terbaca setelah pindah unit penugasan.
+
 ## 08. Bimbingan Konseling
 
-**Alur operasional:** Temuan → Klarifikasi Wali Kelas → Rujukan BK bila diperlukan → Tindak Lanjut → Selesai.
+**Alur rujukan:** Temuan → Klarifikasi Wali Kelas → Rujukan BK bila diperlukan → Tindak Lanjut → Selesai.
+
+**Alur konseling langsung:** Siswa Minta Layanan / Guru BK Temukan Kebutuhan → Guru BK Tinjau dan Tetapkan Penanggung Jawab → Sesi Konseling → Tindak Lanjut → Selesai.
 
 **Tujuan.** Mencatat layanan konseling dengan perlindungan catatan pribadi siswa.
 
@@ -827,11 +945,19 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **4.** Pimpinan hanya melihat statistik atau ringkasan yang diizinkan.
 
-**Status.** Diajukan → Ditangani → Selesai.
+**Status kasus konseling.** Diajukan → Ditangani → Perlu Tindak Lanjut → Selesai; permintaan/kasus dapat Dibatalkan beralasan, dan kasus Selesai dapat dibuka kembali menjadi Ditangani dengan audit. Status rujukan presensi tetap mengikuti modul 03, bukan syarat konseling langsung.
 
 **Hasil.** Riwayat BK dan laporan agregat.
 
 **Aturan penting.** Catatan konseling tidak bisa dibaca Admin Sekolah/Owner secara otomatis.
+
+### 08.1 Pintu masuk, penyelesaian dan kerahasiaan BK
+
+- Permintaan langsung siswa kepada Guru BK tidak membutuhkan rujukan atau persetujuan wali kelas. Siswa boleh menghubungi secara langsung; Guru BK berizin mencatat permintaan bila akun siswa tidak tersedia. Catatan rujukan presensi dan catatan konseling adalah objek terpisah dengan izin berbeda.
+- Guru BK menetapkan kasus/penanggung jawab sesuai penugasan; kasus boleh memiliki beberapa sesi. Guru BK dapat mengembalikan permintaan untuk klarifikasi, menjadwalkan penanganan, atau membatalkan permintaan yang ganda/tidak jadi dengan alasan; bukan menghapus catatan yang telah ditangani.
+- Selesai berarti ada ringkasan hasil dan tindak lanjut/penutupan oleh Guru BK penanggung jawab beserta waktu. Wali kelas melihat status tindak lanjut dan informasi minimum yang memang boleh dibagikan, bukan isi sesi privat. Tidak wajib menambah sesi bila pembinaan sudah selesai di wali kelas.
+- Pembukaan kembali kasus mencatat alasan dan versi status baru; pergantian Guru BK memerlukan penugasan kasus yang eksplisit dengan audit akses. Pimpinan/Admin/Owner tidak otomatis mendapat isi konseling dari status selesai, pergantian petugas atau penggabungan identitas.
+- Tanpa modul BK aktif, alur pendampingan presensi dasar tetap berjalan pada Absensi; pembuatan sesi/catatan konseling rinci tetap ditolak. Kasus/arsip privat mengikuti hak akses arsip, tidak ditampilkan pada rekap presensi umum.
 
 ## 09. Jadwal Pelajaran
 
@@ -854,7 +980,7 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **2.** Waka membuat jadwal manual.
 >
-> **3.** Sistem menolak/memberi peringatan saat bentrok sebelum publikasi.
+> **3.** Sistem menolak publikasi saat ada bentrok guru/kelas/ruang pada waktu yang sama; peringatan saja tidak boleh menghasilkan jadwal terbit yang bertabrakan.
 >
 > **4.** Guru dan siswa membaca jadwal yang sudah terbit.
 
@@ -863,6 +989,16 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 **Hasil.** Jadwal kelas dan guru tanpa bentrok.
 
 **Aturan penting.** Tidak perlu generator jadwal otomatis untuk MVP.
+
+### 09.1 Revisi jadwal dan pengganti tanpa kalender akademik
+
+**Alur revisi:** Salin Jadwal Terbit menjadi Draf → Ubah Penugasan/Jam → Tentukan Tanggal Berlaku → Uji Bentrok → Terbitkan Versi Baru → Versi Lama Menjadi Histori.
+
+- Jadwal mingguan memiliki versi, status dan rentang berlaku; perubahan tidak mengedit versi terbit yang sudah menjadi rujukan sesi. Validasi overlap versi aktif serta bentrok guru, kelas dan ruang dilakukan pada transaksi publikasi untuk rentang yang bertemu, termasuk dua petugas menerbitkan bersamaan.
+- Penugasan pengganti sementara menyebut guru asal/pengganti, kelas/mapel, tanggal atau rentang waktu dan alasan. Tidak perlu mengubah jadwal satu semester atau membuat kalender akademik. Pengganti mendapat pilihan presensi hanya pada lingkup delegasi yang sah.
+- Kegiatan yang batal atau bergeser dicatat sebagai pengecualian sesi/jadwal terkait dengan alasan; jangan membuat seluruh siswa A atau jurnal guru kosong. Tidak mewajibkan admin mengisi daftar libur/kalender tahunan.
+- Sesi presensi yang sudah tersimpan mempertahankan snapshot kelas, pengajar, mapel dan jam kejadian. Revisi jadwal tidak mengubah presensi historis atau jurnal kegiatan guru. Jadwal yang dibatalkan/digantikan tetap dapat ditelusuri; tidak menghapus sesi atau penugasan lama.
+- Jadwal tetap opsional bagi Absensi. Bila tidak aktif, pilihan kelas/mapel berasal dari `penugasan_mengajar` dan guru menyatakan jam yang benar-benar diajar; perubahan jadwal tidak mengubah kewajiban jurnal harian kegiatan/hasil.
 
 ## 10. Tracer Study Alumni
 
@@ -896,11 +1032,24 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **5.** Pengelola Alumni melihat jumlah responden dan laporan agregat. Data pribadi sensitif tidak tampil dalam laporan umum.
 
-**Status registrasi.** Menunggu Verifikasi → Disetujui / Perlu Klarifikasi / Ditolak. **Status survei.** Belum Mengisi → Sudah Mengisi.
+**Status registrasi.** Menunggu Verifikasi → Disetujui / Perlu Klarifikasi / Ditolak. **Status periode survei.** Draf → Dibuka → Ditutup. **Status respons.** Draf → Terkirim; revisi menghasilkan versi baru, bukan menimpa kiriman lama.
 
 **Hasil.** Profil alumni berkelanjutan, timeline aktivitas, dan statistik alumni per angkatan.
 
 **Aturan penting.** Pendaftaran dapat digunakan jika BKK **atau** Tracer aktif, tidak perlu modul Website; tidak menggantikan sistem pelaporan tracer resmi pemerintah. Tidak memaksa alumni memilih hanya satu status (bekerja/kuliah/usaha), dan tidak memaksa data pernikahan.
+
+### 10.1 Versi formulir dan koreksi jawaban tracer
+
+**Alur:** Pengelola Susun Versi Form → Kunci Versi Saat Periode Dibuka → Alumni Simpan Draf/Kirim → Simpan Snapshot Pertanyaan dan Jawaban → Koreksi sebagai Versi Baru bila Sah → Laporan Mengacu Versi yang Dipilih.
+
+- `periode_tracer` menunjuk satu `versi_formulir_tracer` yang sudah diterbitkan. Versi pertanyaan, pilihan, tipe/aturan validasi dan label tidak diubah setelah periode dibuka atau ada respons. Perbaikan salah ketik substantif/pertanyaan baru dibuat pada versi baru untuk periode berikutnya; bukan mengubah makna jawaban periode berjalan.
+- Periode memiliki waktu buka/tutup eksplisit tanpa kalender akademik. Server memeriksa batas pada setiap penyimpanan/kirim; setelah ditutup tidak ada kiriman baru kecuali Pengelola Alumni membuka kembali dengan alasan dan audit, atau memberi izin koreksi untuk satu respons tertentu sesuai aturan di bawah. Izin koreksi terbatas tidak membuka periode untuk alumni lain atau respons baru. Tidak ada scheduler atau pengingat otomatis yang menjadi prasyarat.
+- Satu alumni satu respons logis per periode, UNIQUE (`periode_tracer_id`, `profil_alumni_id`); kiriman memiliki `revisi_ke` dan snapshot pertanyaan/opsi/jawaban/tanggal kondisi. Draf boleh diperbaiki sendiri sebelum dikirim; kiriman tidak diubah oleh perubahan profil/riwayat karier.
+- Sebelum periode ditutup, alumni boleh mengoreksi jawaban sendiri melalui tindakan **Kirim Koreksi** dengan alasan; buat `versi_jawaban_tracer` baru, simpan versi lama dan tandai versi efektif. Sesudah ditutup, alumni mengajukan koreksi ke Pengelola Alumni; petugas membuka akses koreksi satu respons dengan alasan, bukan membuka seluruh data alumni lain. Petugas tidak mengarang jawaban menggantikan alumni.
+- Laporan normal menghitung satu versi efektif per alumni/periode, tidak menjumlahkan semua revisi sebagai responden baru. Ekspor bukti dapat memilih versi lama/baru dan mencantumkan versi formulir, revisi jawaban serta waktu pengisian. Perbandingan lintas versi form hanya untuk pertanyaan yang maknanya setara; jangan menyamakan pilihan yang berbeda secara diam-diam.
+- Data pribadi opsional tetap privat. Koreksi pencarian kerja/aktivitas tidak memaksa satu status tunggal dan tidak mempublikasikan pernikahan. Hak baca/koreksi mengikuti alumni sendiri atau petugas tracer yang ditugaskan, serta lisensi aktif untuk mutasi.
+
+**Penerimaan:** mengubah profil tidak mengubah survei lama; dua klik kirim tidak menambah responden; koreksi menghasilkan revisi terlacak; formulir periode yang sudah dibuka tidak dapat diganti isinya; laporan tetap satu responden per periode.
 
 ## 11. HUBIN / DUDI
 
@@ -927,11 +1076,23 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **4.** Pimpinan melihat rekap.
 
-**Status.** Draft → Aktif → Berakhir.
+**Status.** Draf → Aktif → Berakhir / Dibatalkan; perpanjangan dan adendum adalah record/version terkait, bukan penimpaan kontrak lama.
 
 **Hasil.** Database mitra dan arsip kerja sama.
 
 **Aturan penting.** Mitra yang digunakan PKL mengambil sumber data yang sama jika kedua modul aktif.
+
+### 11.1 Revisi, perpanjangan dan pembatalan kerja sama
+
+**Alur:** Catat Draf Kerja Sama → Pejabat Periksa → Aktifkan → Catat Adendum/Perpanjangan bila Ada → Berakhir atau Batalkan dengan Alasan → Tinjau Dampak Penempatan Secara Terpisah.
+
+- `kerja_sama_industri` menyimpan mitra, nomor, ruang lingkup, waktu mulai/akhir, status, penanggung jawab dan file opsional. Nomor/sumber dokumen dan periode disimpan sebagai fakta historis. Perubahan kontak master mitra tidak menulis ulang identitas pihak pada dokumen yang sudah berlaku.
+- Adendum menyimpan snapshot perubahan dan referensi dokumen induk; perpanjangan menyimpan periode/dokumen baru dengan `kerja_sama_sebelumnya_id`. Dokumen lama tidak diedit untuk seolah selalu berlaku. Waka/pimpinan berizin mengesahkan atau membatalkan sesuai penugasan; staf dapat menyiapkan draf.
+- Waktu akhir diperiksa ketika data dibaca/ditindaklanjuti; GET hanya menghitung status efektif Berakhir tanpa menulis database, dan perubahan status tersimpan hanya melalui request mutasi berizin. Tidak membutuhkan scheduler. Record tetap bisa diarsipkan dan diekspor. Pembatalan sebelum waktu akhir membutuhkan alasan, tanggal efektif dan pelaku; tidak menghapus dokumen atau kegiatan yang sudah terjadi.
+- Berakhir/dibatalkannya MoU **tidak otomatis membatalkan penempatan PKL, jurnal atau nilai** yang sah. Tampilkan peringatan kepada koordinator/HUBIN; koordinator meninjau kelanjutan, penghentian atau perpindahan PKL melalui alur PKL dengan tanggal efektif dan histori.
+- Penempatan PKL tidak diwajibkan memiliki MoU HUBIN ketika modul HUBIN tidak aktif. Jika kedua modul aktif, referensi kerja sama dapat ditautkan untuk bukti, tetapi tidak menduplikasi mitra atau mengubah fakta penempatan lama saat kontrak diperbarui.
+
+**Penerimaan:** perpanjangan mempertahankan dokumen lama; expiry tanpa cron tampil tepat; pembatalan kerja sama tidak menghapus nilai/penempatan PKL; perpindahan PKL hanya terjadi setelah tindakan koordinator.
 
 ## 12. Supervisi & Kinerja Guru
 
@@ -958,9 +1119,19 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **4.** Kepala Sekolah melihat rekap.
 
-**Status.** Dijadwalkan → Dinilai → Selesai.
+**Status supervisi.** Dijadwalkan → Dinilai (Draf/Final) → Perlu Tindak Lanjut → Selesai. Pembatalan memakai Dibatalkan; koreksi hasil final memakai Dalam Revisi → Final kembali, dengan versi/jejak lama tetap tersimpan.
 
 **Hasil.** Dokumen hasil supervisi dan rekap.
+
+### 12.1 Revisi instrumen, pergantian petugas dan penyelesaian supervisi
+
+**Alur:** Susun Versi Instrumen → Tetapkan Supervisi dan Penanggung Jawab → Observasi → Finalkan Hasil → Guru Catat Tindak Lanjut → Supervisor Verifikasi → Selesai.
+
+- Instrumen mempunyai versi; setiap supervisi menyimpan versi/indikator, rentang skor dan rumus/rubrik yang dipakai saat penilaian. Mengubah master instrumen tidak menghitung ulang atau mengganti hasil supervisi lama.
+- Perubahan tanggal/guru/supervisor sebelum observasi dicatat dengan alasan dan pemberitahuan di halaman pihak terkait. Setelah ada penilaian, pergantian supervisor memerlukan penugasan serah-terima eksplisit; pelaku nilai terdahulu tidak diganti dengan nama supervisor baru.
+- Pembatalan supervisi menyimpan alasan/status Dibatalkan. Observasi yang sudah dilakukan tidak dihapus; bila perlu pengulangan buat supervisi baru yang merujuk record asal, bukan menimpa bukti lama.
+- Hasil final terkunci. Koreksi melalui **Minta Revisi → Supervisor Berizin Buka Versi Revisi → Koreksi Beralasan → Finalisasi Ulang**. Guru menanggapi rekomendasi, bukan mengubah nilai dirinya. Pimpinan hanya memfinalkan bila memang diberi hak tersebut.
+- Status Selesai membutuhkan ringkasan hasil, tindak lanjut guru (atau alasan tidak diperlukan) dan verifikasi supervisor/pejabat yang ditugaskan beserta tanggal. Jika bukti belum cukup, kembalikan ke Perlu Tindak Lanjut; pembukaan kembali dicatat dalam audit. Rekap memakai hasil final terkini dan tetap dapat menelusuri versi lama.
 
 ## 13. Laboratorium & Bengkel
 
@@ -989,11 +1160,26 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **4.** Petugas memperbarui stok dan kondisi alat; laporan tersedia bagi Kepala Lab/Sarpras.
 
-**Status.** Bahan: Masuk/Dipakai. Alat: Tersedia/Dipinjam/Rusak.
+**Status.** Bahan memakai mutasi Masuk/Dipakai/Penyesuaian/Pembalik. Kondisi dan pinjaman alat mengikuti unit aset pada modul Sarpras. Pemesanan ruang: Diajukan → Disetujui / Ditolak / Dibatalkan → Digunakan → Selesai.
 
 **Hasil.** Riwayat praktik dan stok aktual.
 
 **Aturan penting.** Bila hanya modul Lab yang aktif, pengelolaan aset terbatas ruang lab tetap tersedia melalui core aset yang sama. Tidak membuat tabel/identitas aset duplikat.
+
+### 13.1 Batal pemesanan, pengembalian dan koreksi stok
+
+**Alur ruang:** Guru Ajukan Ruang/Waktu → Petugas Cek Bentrok → Setujui → Gunakan → Selesai; atau Batalkan Sebelum Digunakan dengan Alasan.
+
+**Alur bahan:** Terima Bahan → Catat Mutasi Masuk → Catat Pemakaian → Cocokkan Stok Fisik → Jika Berbeda Catat Penyesuaian Beralasan → Verifikasi Saldo.
+
+- Batal pemesanan sebelum Digunakan melepaskan slot waktu tetapi mempertahankan permohonan dan alasan. Pemesanan yang sudah digunakan tidak dibatalkan seolah kegiatan tak terjadi; koreksi waktu/hasil disimpan sebagai revisi. Persetujuan dan koreksi mengunci ruang/rentang terkait sehingga dua petugas tidak menyetujui bentrok secara bersamaan.
+- Reservasi ruang tidak otomatis menyerahkan aset atau mengurangi bahan. Pengambilan alat memakai serah-terima dan rincian unit yang sama dengan Sarpras; pengembalian sebagian/rusak/hilang mengikuti §07.1, tanpa membuat pinjaman kedua di tabel Lab.
+- Stok bahan berasal dari jumlah mutasi sah, bukan nilai yang bebas diedit pada master. Pemakaian membutuhkan jumlah positif, satuan baku dan pelaku/tujuan; kunci baris bahan untuk mencegah saldo negatif akibat request paralel. Pembatalan pemesanan tidak otomatis mengembalikan bahan yang benar-benar telah dipakai.
+- Selisih stok fisik dicatat sebagai `penyesuaian_stok_lab` dengan jumlah tercatat, jumlah fisik, selisih, alasan dan petugas. Petugas dengan hak penyesuaian mengesahkan; penyesuaian menghasilkan mutasi bertanda positif/negatif. Tidak mengubah atau menghapus mutasi lama.
+- Salah mutasi diperbaiki dengan mutasi pembalik yang mereferensikan transaksi asal lalu record pengganti bila diperlukan, dalam satu transaksi dan idempotensi. Tolak pembalik yang membuat stok negatif atau melebihi transaksi yang belum dibalik; minta verifikasi fisik, jangan memaksa saldo nol.
+- Mengganti nama/satuan bahan tidak boleh mengubah kuantitas historis. Konversi satuan di luar MVP; jika satuan dasar berbeda, buat master bahan berbeda dan catat perpindahan yang sah, bukan mengubah satuan master lama.
+
+**Penerimaan:** pemesanan dibatalkan tidak hilang dari audit; dua persetujuan bentrok hanya satu berhasil; pemakaian paralel tidak minus; koreksi stok menghasilkan mutasi baru; alat yang kembali sebagian tidak menutup semua unit.
 
 ## 14. Poin Pelanggaran Siswa Digital
 
@@ -1021,11 +1207,21 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 >
 > **4.** Guru BK/wali kelas mencatat pembinaan jika diperlukan.
 
-**Status.** Menunggu Verifikasi → Sah/Dikoreksi/Ditolak.
+**Status kejadian.** Menunggu Verifikasi → Sah / Ditolak; kejadian Sah dapat Dibatalkan beralasan. Dikoreksi adalah versi pengganti Sah yang menandai versi lama digantikan, bukan dua kejadian berpoin. Pembinaan memiliki status tindak lanjut terpisah dari keabsahan poin.
 
 **Hasil.** Riwayat kedisiplinan yang dapat ditelusuri.
 
 **Aturan penting.** Tidak ada hukuman otomatis berdasarkan angka poin; keputusan pembinaan dibuat manusia.
+
+### 14.1 Snapshot poin, periode dan pembatalan kejadian
+
+**Alur koreksi:** Siswa/Wali/Guru Ajukan Keberatan → Kesiswaan Periksa Bukti → Tegaskan/Koreksi/Batalkan → Simpan Versi dan Alasan → Hitung Ulang Rekap Periode → Lanjutkan Pembinaan bila Perlu.
+
+- Catatan kejadian menyimpan snapshot kode/nama aturan, bobot poin, tanggal kejadian, tahun ajaran/semester serta kelas saat kejadian. Saat divalidasi, validator memastikan versi aturan yang berlaku untuk tanggal kejadian; perubahan master sesudahnya tidak mengubah poin historis.
+- Rekap standar per tahun ajaran, dapat difilter semester dan seluruh histori. Tahun baru tidak menghapus poin lama dan tidak otomatis memindahkan total tahun lalu ke total tahun baru. Laporan menyebut cakupan periode dengan jelas; pembinaan dapat berlanjut tanpa memalsukan tanggal kejadian.
+- Poin hanya dihitung dari kejadian Sah. Koreksi membuat versi pengganti yang sah, bukan menjumlahkan versi lama dan baru. Pembatalan kejadian yang telanjur Sah menyimpan alasan/bukti keputusan dan mengeluarkannya dari total efektif, tanpa menghapus peristiwa atau audit.
+- Keberatan tidak otomatis membatalkan poin; validator menetapkan keputusan. Pelapor tidak bisa mengubah sendiri bobot final atau mengesahkan ulang record yang dibatalkan tanpa proses koreksi berizin.
+- Rujukan/pembinaan BK menaut ke kejadian dan statusnya, bukan membuka catatan konseling. Penyelesaian pembinaan tidak berarti menghapus poin sah; tidak ada hukuman otomatis berdasarkan total angka.
 
 ## 15. Website Sekolah + CMS
 
@@ -1048,7 +1244,7 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 
 > **1.** Admin melengkapi profil dan identitas sekolah.
 >
-> **2.** Editor membuat halaman/berita dan menekan Simpan Draft atau Terbitkan.
+> **2.** Editor membuat draf/revisi halaman atau berita. Simpan Draf hanya mengubah versi kerja; tindakan Terbitkan secara eksplisit mengganti versi yang dilihat publik.
 >
 > **3.** Editor mengatur menu dinamis, posisi, parent submenu dan tautannya.
 >
@@ -1078,6 +1274,22 @@ Kolaborasi presensi tersedia pada modul Absensi untuk wali kelas/Guru BK yang di
 - Pratinjau draft hanya untuk editor terautentikasi; publik tetap melihat tema aktif sampai Terapkan. Pergantian tidak menghapus berita, URL, menu, media atau SEO dasar; template menampilkan empty state jika konten belum tersedia.
 - Seluruh tema responsif, navigasi keyboard, kontras memadai, Bahasa Indonesia, judul/deskripsi yang dapat diatur, serta menu/submenu CMS. Tidak ada PPDB, payment, formulir kontak atau fitur baru hanya karena ada elemen visual tema.
 - Setiap tema wajib lulus uji halaman publik, berita/detail, halaman statis, menu mobile, submenu dan kondisi kosong/error. Pilihan tema dipertahankan saat upgrade maupun modul nonaktif/aktif ulang. Prototipe HTML adalah contoh desain, bukan bukti backend CMS sudah tersedia.
+
+### 15.2 Revisi publikasi dan media yang masih digunakan
+
+**Alur konten:** Editor Buat/Revisi Draf → Pratinjau Privat → Terbitkan Eksplisit → Publik Melihat Versi Terbit → Revisi Berikutnya Tetap Draf sampai Diterbitkan.
+
+**Alur media:** Unggah dan Validasi → Pilih untuk Konten/Menu/Tema → Catat Pemakaian → Cek Referensi Sebelum Hapus → Ganti/Lepaskan Referensi bila Perlu → Arsipkan atau Hapus Sesuai Hak.
+
+- Halaman/berita memiliki identitas URL tetap, versi draf dan referensi versi terbit. Mengedit konten yang sudah terbit membuat `revisi_konten_website` baru; menyimpan draf tidak mengganti HTML, judul, slug, menu atau media yang dilihat publik.
+- Terbitkan memvalidasi isi/menu/media, memindahkan pointer versi terbit dan menginvalidasi cache halaman secara atomik setelah commit. Gagal publikasi tetap menyajikan versi terbit lama. Dua editor memakai versi data; kiriman tab lama ditolak dengan pesan muat ulang, bukan menimpa revisi baru.
+- Kembali ke versi sebelumnya merupakan publikasi ulang versi tersimpan dengan audit, bukan menghapus revisi yang lebih baru. Arsip konten menariknya dari publik dan menyembunyikan tautan menu internal terkait; admin tetap dapat membaca versi lama. Mengubah slug perlu redirect dari URL lama atau mempertahankan slug; jangan menghasilkan tautan menu rusak diam-diam.
+- Pratinjau memerlukan editor terautentikasi dan tidak membuka draf melalui URL publik/tautan yang dapat ditebak. Berita terbit, halaman statis, menu, tema dan media tampil konsisten di kelima tema publik; layout admin tetap sama.
+- `pemakaian_media_website` mencatat referensi file pada versi konten, galeri, logo/banner, menu dan pengaturan tema. Media yang masih dipakai versi terbit **atau draf/revisi tersimpan** tidak boleh dihapus fisik. Tampilkan daftar pemakaian dan minta editor mengganti atau melepaskan referensi secara eksplisit; jangan menghapus file lalu membiarkan gambar rusak.
+- Media tidak terpakai boleh diarsipkan dan dihapus oleh editor berhak setelah pemeriksaan referensi ulang dalam transaksi/lock yang sesuai. Penghapusan gagal tidak merusak konten; penghapusan DB/file harus memakai mekanisme yang dapat diperiksa ulang tanpa menghapus file lain. Jangan menghapus unggahan privat modul sekolah melalui pengelolaan media website.
+- Semua versi HTML tetap disanitasi saat publikasi dan output aman; revisi lama bukan cara melewati sanitasi. Kebijakan retensi revisi/media ditetapkan sekolah; MVP tidak menjalankan penghapusan otomatis atau scheduler.
+
+**Penerimaan:** mengubah berita terbit lalu Simpan Draf membuat publik tetap melihat versi lama; publikasi gagal tidak membuat halaman kosong; media yang dipakai ditolak saat dihapus; rollback versi konten dan ganti tema tidak kehilangan URL/menu/media.
 
 # 8. Integrasi wajib lintas fitur
 
@@ -1139,7 +1351,7 @@ Katalog akhir tetap **Core + 15 modul berlisensi**. Istilah MVP berarti **R1**, 
 
 **Alur bagian:** Validasi → Otorisasi → Transaksi → Audit → Tampilkan Hasil Aman.
 
-- Akses berdasarkan role dan izin per tindakan; modul nonaktif tidak bisa diakses lewat URL atau pemanggilan Livewire secara langsung.
+- Akses berdasarkan role, tindakan dan lingkup objek. Modul nonaktif menolak seluruh fitur operasional/mutasi melalui route maupun Livewire; arsip baca/ekspor dan bukti proses memakai jalur Core khusus §13.6/§15.1 tanpa mensyaratkan lisensi aktif. Hak data tetap diperiksa, bukan bypass otorisasi.
 
 - File sensitif (nilai, pembayaran, dokumen siswa, konseling) berada di penyimpanan privat dengan pemeriksaan izin saat unduh.
 
@@ -1238,26 +1450,31 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 |---|---|---|
 | `jenis_biaya` | `id`, `nama`, `aktif` | Jenis biaya seperti SPP/praktik; nama baru tidak mengubah tagihan lama. |
 | `aturan_tarif` | `jenis_biaya_id`, `tahun_ajaran_id`, tingkat/kelas, `nominal` | Tarif acuan untuk **tagihan baru**. |
-| `tagihan` | `id`, `siswa_id`, `jenis_biaya_id`, `kunci_periode`, `tahun_ajaran_id`, `kepesertaan_siswa_id` nullable, `nama_kelas_saat_terbit`, `nama_biaya_saat_terbit`, `nominal_saat_terbit`, `tanggal_jatuh_tempo`, `status` | **UNIQUE (`siswa_id`, `jenis_biaya_id`, `kunci_periode`)** dalam lingkup biaya yang ditagih sekali per periode; sesuaikan `kunci_periode` agar mencakup tahun ajaran yang relevan. |
+| `tagihan` | `id`, `siswa_id`, `jenis_biaya_id`, `kunci_periode`, `tahun_ajaran_id`, `kepesertaan_siswa_id` nullable, `nama_kelas_saat_terbit`, `nama_biaya_saat_terbit`, `nominal_saat_terbit`, `tanggal_jatuh_tempo`, `status`, `status_administrasi` | **UNIQUE (`siswa_id`, `jenis_biaya_id`, `kunci_periode`)** dalam lingkup biaya yang ditagih sekali per periode; sesuaikan `kunci_periode` agar mencakup tahun ajaran yang relevan. |
 | `pembayaran` | `id`, `tagihan_id`, `nomor_kuitansi`, `nominal`, `dibayar_pada`, `metode`, `status`, `dibuat_oleh` | Pembayaran parsial diperbolehkan; `nomor_kuitansi` unik. Koreksi/void dicatat, bukan menghapus pembayaran. |
-| `koreksi_pembayaran` *(opsional)* | `pembayaran_id`, alasan, nilai perubahan, `disetujui_oleh` | Dipakai bila sekolah butuh pembetulan formal; jika belum, perubahan hanya lewat void yang diaudit. |
+| `koreksi_pembayaran` | `id`, `pembayaran_id`, `jenis_koreksi`, `alasan`, `status_lama`, `status_baru`, `disetujui_oleh`, `dikoreksi_pada`, `pembayaran_pengganti_id` nullable | Audit pembatalan administratif/koreksi; uang nyata tidak dianggap kembali hanya karena record di-void. |
+| `penyesuaian_tagihan` | `id`, `tagihan_id`, `delta_nominal`, `jenis`, `alasan`, `status`, `disetujui_oleh`, `kunci_idempotensi`, `membalik_penyesuaian_id` nullable | Koreksi/batal/pembalik sebagai event bertanda, tidak mengubah snapshot penerbitan. Nominal efektif tidak negatif atau lebih kecil dari penerimaan neto saat tagihan aktif. |
+| `pengembalian_pembayaran` | `id`, `pembayaran_id`, `arah` (keluar/pembalik), `nominal`, `tanggal`, `penerima`, `metode`, `referensi_bukti`, `status`, `disetujui_oleh`, `kunci_idempotensi`, `membalik_pengembalian_id` nullable | Bukti pengembalian manual/pembalik terverifikasi, nominal positif dengan arah bertanda; keluar tidak melebihi penerimaan tersisa, pembalik tidak melebihi bagian record asal yang belum dibalik. |
 
-**Invarian keuangan:** `total_tagihan = tagihan.nominal_saat_terbit`; `total_bayar_efektif = SUM(pembayaran.nominal yang status-nya sah)`; `sisa = total_tagihan - total_bayar_efektif`. `sisa` tidak boleh negatif. Status **Belum Bayar / Sebagian / Lunas** dihitung dari transaksi sah, tidak diubah manual sembarangan. Saat beberapa request menerima pembayaran untuk tagihan yang sama, kunci baris tagihan dan hitung kembali saldo di dalam transaksi agar tidak kelebihan bayar.
+**Invarian keuangan:** `total_tagihan_efektif = nominal_saat_terbit + SUM(penyesuaian_tagihan.delta_nominal yang sah)`; `pengembalian_neto = SUM(pengembalian_pembayaran.nominal bertanda menurut arah yang sah)`; `penerimaan_neto = SUM(pembayaran.nominal yang sah) - pengembalian_neto`; `sisa = total_tagihan_efektif - penerimaan_neto`. Semua nominal rupiah memakai DECIMAL tetap, bukan float. Tagihan aktif mensyaratkan `total_tagihan_efektif >= 0`, `penerimaan_neto >= 0` dan `sisa >= 0`; pengembalian tidak boleh melebihi penerimaan belum dikembalikan. Pembatalan final hanya saat penerimaan neto nol dan penyesuaian pembatalan membuat tagihan efektif nol. Tagihan Menunggu Penyelesaian ditampilkan terpisah, tidak menerima pembayaran baru. Saldo **Belum Bayar / Sebagian / Lunas** dihitung untuk tagihan aktif; status administratif batal tidak disamakan dengan pembayaran lunas. Kunci tagihan/pembayaran dan hitung kembali nilai ini dalam transaksi sebelum menerima uang/koreksi/pengembalian.
 
 **Larangan:** kenaikan kelas, pemindahan kelas, kelulusan, perubahan tarif dan perubahan role tidak boleh mengubah `nominal_saat_terbit`, `nama_biaya_saat_terbit`, maupun `nama_kelas_saat_terbit` pada tagihan yang sudah diterbitkan. Alumni tanpa `siswa_id` tidak mendapat tagihan fiktif. Pembuatan tagihan untuk alumni lama tanpa riwayat siswa **di luar MVP**.
 
-**Tagihan massal:** pasangan (`siswa_id`, `jenis_biaya_id`, `kunci_periode`) menjadi kunci bisnis pencegah duplikasi. Jika sekolah memerlukan beberapa komponen berbeda pada periode sama, buat tagihan terpisah per jenis dan tampilkan total gabungannya di laporan. Retry batch dengan kunci sama harus melewati item yang sudah dibuat, bukan membuat tagihan ganda.
+**Tagihan massal:** pasangan (`siswa_id`, `jenis_biaya_id`, `kunci_periode`) menjadi kunci bisnis pencegah duplikasi, termasuk record batal. Pembukaan kembali setelah pembatalan keliru memakai koreksi pada record sama, bukan insert tagihan baru. Jika sekolah memerlukan beberapa komponen berbeda pada periode sama, buat tagihan terpisah per jenis dan tampilkan total gabungannya di laporan. Retry batch dengan kunci sama harus melewati item yang sudah dibuat, bukan membuat tagihan ganda.
 
 ## 12.5 Satu master aset untuk Sarpras dan Laboratorium
 
 | Tabel | Kolom pokok | Aturan |
 |---|---|---|
 | `aset` | `id`, `kode_aset`, nama, kategori, lokasi, kondisi, penanggung jawab | **UNIQUE (`kode_aset`)**; milik bersama Sarpras–Lab. |
-| `peminjaman_aset` | `aset_id`, peminjam, tanggal pinjam/kembali, status | Satu aset individu tidak boleh dipinjam ke dua pihak secara aktif bersamaan. |
+| `peminjaman_aset` | `id`, `peminjam_id` (FK pengguna), `diajukan_pada`, `status`, `alasan`, `disetujui_oleh` nullable | Header satu permohonan beberapa unit; status keseluruhan berasal dari rincian, bukan mengembalikan semua unit sekaligus. |
+| `rincian_peminjaman_aset` | `id`, `peminjaman_aset_id`, `aset_id`, `diserahkan_pada` nullable, `dikembalikan_pada` nullable, `kondisi_awal`, `kondisi_akhir` nullable, `status`, `diterima_oleh` nullable | Satu unit hanya satu serah-terima aktif; kunci baris aset saat serah-terima/kembali. UNIQUE pasangan pinjaman/unit; pinjaman aktif antar-header dicegah lewat transaksi/lock aset. |
+| `kejadian_aset` | `id`, `aset_id`, `rincian_peminjaman_aset_id` nullable, `jenis`, `tanggal`, `alasan`, `hasil_penyelesaian` nullable, `diselesaikan_oleh` nullable | Kerusakan/kehilangan/penghapusan/ganti unit ber-audit; unit hilang tidak ditandai kembali. |
 | `perpindahan_aset` | `aset_id`, lokasi asal/tujuan, waktu, alasan | Riwayat perpindahan dan perubahan penting. |
 | `bahan_habis_pakai` | `id`, nama bahan, satuan, stok | Barang habis pakai berbeda dari aset berseri/QR. |
-| `mutasi_stok_lab` | `bahan_habis_pakai_id`, jenis masuk/keluar, jumlah, aktor | Saldo stok berasal dari transaksi valid; tidak boleh minus. |
-| `pemesanan_ruang_lab` | `ruang_id`, kelas/guru, waktu mulai/selesai | Validasi bentrok penggunaan ruang. |
+| `mutasi_stok_lab` | `id`, `bahan_habis_pakai_id`, `jenis`, `delta_jumlah`, `satuan_saat_transaksi`, `alasan`, `dibuat_oleh`, `membalik_mutasi_id` nullable, `kunci_idempotensi` | Saldo berasal dari mutasi sah; tidak boleh minus; pembalik/penyesuaian record baru, bukan edit/hapus lama. |
+| `penyesuaian_stok_lab` | `id`, `bahan_habis_pakai_id`, `jumlah_tercatat`, `jumlah_fisik`, `selisih`, `alasan`, `disetujui_oleh`, `mutasi_stok_lab_id` | Pengesahan hasil pemeriksaan fisik menghasilkan satu mutasi idempotent. |
+| `pemesanan_ruang_lab` | `id`, `ruang_id`, kelas/guru, waktu mulai/selesai, `status`, `alasan_pembatalan` nullable, `diputuskan_oleh` nullable | Validasi bentrok secara transaksional; batal sebelum digunakan melepaskan slot, histori dipertahankan. |
 
 **Pembedaan wajib:** laptop dengan nomor inventaris dikelola per unit di `aset`, sedangkan bahan seperti kabel, cairan, atau baut yang habis pakai dikelola kuantitas di stok Lab. Jika alat Praktik diperbaiki melalui modul Lab, perubahan kondisi terjadi pada **baris `aset` yang sama** dan langsung terlihat di Sarpras. Untuk transaksi stok paralel gunakan penguncian baris stok.
 
@@ -1268,35 +1485,48 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 | PKL | `mitra_industri`, `periode_pkl`, `penempatan_pkl`, `jurnal_pkl`, `kehadiran_pkl`, `penilaian_pkl` | Nilai industri diinput guru dari kertas, penilai dan tanggal dicatat; berkas bukti opsional. |
 | Jurnal Kegiatan Guru | `jurnal_kegiatan_guru`, `rincian_jurnal_guru` | Catatan pekerjaan dan hasil harian, tanpa ketergantungan jadwal/presensi/kalender. |
 | Absensi + Izin | `sesi_pelajaran`, `kehadiran_siswa`, `tindak_lanjut_presensi`, `pengajuan_izin_siswa`, `pengajuan_izin_pegawai` | `sesi_pelajaran` unik (`kelas_id`, `tanggal`, `jam_ke`); pengiriman satu kelas/sesi wajib atomik lengkap; `kehadiran_siswa` unik (`sesi_pelajaran_id`, `siswa_id`) untuk setiap jam; **tanpa** tabel absensi guru. |
-| Surat | `surat`, `templat_surat` | Mode `metadata`, `editor`, atau `upload`; path file nullable. Penomoran final unik sesuai tahun/jenis. |
-| BKK | `lowongan_kerja`, `lamaran_kerja` | Lamaran menunjuk `profil_alumni.id` atau siswa tingkat akhir yang sah. |
+| Surat | `surat`, `templat_surat`, `urutan_nomor_surat`, `revisi_surat` | `asal_surat`, `arah_surat`, nomor sistem/nomor asli/sumber, status dan referensi pengganti; isi/file tiap revisi tersimpan. Nomor sistem unik per lingkup tahun/jenis, tidak dipakai ulang setelah batal. |
+| BKK | `lowongan_kerja`, `lamaran_kerja`, `riwayat_lamaran_kerja`, `revisi_lowongan_kerja` | Batas lamaran dan snapshot syarat; UNIQUE pelamar/lowongan, status dan koreksi terlacak. Pelamar menunjuk tepat satu profil alumni atau siswa akhir sah, tidak keduanya. |
 | BK | `kasus_konseling`, `sesi_konseling` | Catatan rahasia terpisah dan izin sangat terbatas. |
 | Jadwal | `jadwal_pelajaran` | Periksa bentrok guru/kelas/ruang untuk rentang waktu yang sama. |
-| Tracer | `jawaban_tracer` | Snapshot jawaban pada tanggal/periode pengisian, tidak ditimpa perubahan riwayat terbaru. |
-| HUBIN | `mitra_industri`, `kerja_sama_industri` | `mitra_industri` dipakai bersama PKL; satu mitra jangan diduplikasi. |
+| Tracer | `periode_tracer`, `versi_formulir_tracer`, `jawaban_tracer`, `versi_jawaban_tracer` | Periode mengunci versi form; UNIQUE alumni/periode; tiap revisi menyimpan snapshot pertanyaan/opsi/jawaban dan alasan, satu pointer versi efektif. |
+| HUBIN | `mitra_industri`, `kerja_sama_industri`, `adendum_kerja_sama`, `kegiatan_hubin` | Master mitra bersama PKL; versi dokumen/nomor/periode dan relasi perpanjangan dipertahankan; berakhirnya MoU bukan pembatalan otomatis PKL. |
 | Supervisi | `supervisi`, `nilai_supervisi` | Guru hanya melihat hasil miliknya; supervisor menginput. |
 | Poin pelanggaran | `aturan_pelanggaran`, `catatan_pelanggaran`, `tindak_lanjut_pelanggaran` | Poin berlaku sesudah validasi; koreksi mempunyai audit. |
-| Website | `halaman_website`, `artikel_website`, `menu_website`, `media_website` | Menu dinamis dengan `induk_id` nullable, urutan, tujuan halaman/URL, status tampil. |
+| Website | `halaman_website`, `artikel_website`, `revisi_konten_website`, `menu_website`, `media_website`, `pemakaian_media_website` | Identitas konten/URL tetap, pointer draf/terbit; snapshot versi terpisah, referensi media terlacak; menu dinamis dan 5 tema memakai konten sama. |
 
 **Struktur jurnal dan izin dari luar aplikasi:**
 
 | Tabel | Kolom pokok | Aturan |
 |---|---|---|
-| `jurnal_kegiatan_guru` | `id`, `guru_id`, `tanggal`, `status`, `dikirim_pada` nullable, `diperiksa_oleh` nullable, `catatan_pemeriksa` nullable | UNIQUE (`guru_id`, `tanggal`); satu jurnal harian, tidak bergantung jadwal/mapel/sesi. Rincian kegiatan pada `rincian_jurnal_guru`. |
+| `jurnal_kegiatan_guru` | `id`, `guru_id`, `tanggal`, `versi_aktif`, `status`, `dikirim_pada` nullable | UNIQUE (`guru_id`, `tanggal`); satu jurnal harian, tidak bergantung jadwal/mapel/sesi. `versi_jurnal_guru` menyimpan versi/kegiatan-hasil dan pemeriksaan terikat versi, bukan menimpa bukti lama. |
 | `pengajuan_izin_siswa` | `id`, `siswa_id`, `waktu_mulai`, `waktu_selesai`, `status_kehadiran` (S/I), `alasan`, `kanal_penerimaan`, `nama_pelapor`, `hubungan_pelapor`, `diterima_pada`, `dicatat_oleh`, `status` (menunggu_pemeriksaan/berlaku/dibatalkan), `diverifikasi_oleh` nullable, `lokasi_lampiran` nullable | Catatan wali kelas langsung berlaku; pengajuan online menunggu pemeriksaan wali kelas. Tanpa persetujuan pejabat lain, tanpa akun wali wajib. Koreksi/pembatalan ber-audit. |
 | `rincian_jurnal_guru` | `id`, `jurnal_kegiatan_guru_id`, `urutan`, `kegiatan`, `hasil`, `kategori` nullable, `jam_mulai` nullable, `jam_selesai` nullable, `kelas_id` nullable, `mata_pelajaran_id` nullable, `kendala` nullable, `tindak_lanjut` nullable | FK jurnal; kegiatan dan hasil wajib tiap rincian; minimal satu rincian valid sebelum kirim. Jam/kelas/mapel opsional. |
+
+**Versi jurnal harian:** `versi_jurnal_guru` menyimpan `jurnal_kegiatan_guru_id`, `nomor_versi`, `status`, snapshot rincian kegiatan/hasil, `alasan_koreksi` nullable, `dibuat_oleh`, `dikirim_pada`, `diperiksa_oleh` nullable, `diperiksa_pada` nullable dan `catatan_pemeriksa` nullable; UNIQUE (`jurnal_kegiatan_guru_id`, `nomor_versi`). Rincian versi terkirim tidak ditimpa. Koreksi membuat versi berikutnya dan status pemeriksaan baru; laporan dapat memilih versi aktif atau menelusuri versi lama. Ini tidak menambah jurnal pertemuan atau kewajiban jadwal.
 
 **Struktur presensi per jam:**
 
 | Tabel | Kolom pokok | Aturan |
 |---|---|---|
-| `sesi_pelajaran` | `id`, `kelas_id`, `tanggal`, `jam_ke`, `mata_pelajaran_id`, `guru_id`, `waktu_mulai`, `waktu_selesai`, `jadwal_pelajaran_id` nullable | UNIQUE (`kelas_id`, `tanggal`, `jam_ke`); validasi guru/mapel, waktu dan penugasan. Data sesi historis tidak ditimpa perubahan jadwal. |
-| `kehadiran_siswa` | `id`, `sesi_pelajaran_id`, `siswa_id`, `penempatan_kelas_siswa_id`, `status_kehadiran`, `status_pemeriksaan`, `catatan`, `dikirim_pada`, `dikonfirmasi_oleh` nullable, `dikonfirmasi_pada` nullable | UNIQUE (`sesi_pelajaran_id`, `siswa_id`); siswa sesuai penempatan saat sesi. Koreksi membatalkan konfirmasi lama dengan jejak audit, lalu minta konfirmasi ulang. |
+| `sesi_pelajaran` | `id`, `kelas_id`, `tanggal`, `jam_ke`, `mata_pelajaran_id`, `guru_id`, `waktu_mulai`, `waktu_selesai`, `jadwal_pelajaran_id` nullable, `jenis_pencatatan` (normal/susulan), `dicatat_oleh`, `alasan_susulan` nullable | UNIQUE (`kelas_id`, `tanggal`, `jam_ke`); validasi guru/mapel, waktu dan penugasan. Data sesi historis tidak ditimpa perubahan jadwal. |
+| `kehadiran_siswa` | `id`, `sesi_pelajaran_id`, `siswa_id`, `penempatan_kelas_siswa_id`, `status_dasar_guru` nullable, `izin_siswa_id` nullable, `status_kehadiran` nullable, `sumber_status`, `versi_sumber`, `status_pemeriksaan`, `catatan`, `dikirim_pada`, `dikonfirmasi_oleh` nullable, `dikonfirmasi_pada` nullable | UNIQUE (`sesi_pelajaran_id`, `siswa_id`); siswa sesuai penempatan saat sesi. Koreksi membatalkan konfirmasi lama dengan jejak audit, lalu minta konfirmasi ulang. |
 | `tindak_lanjut_presensi` | `id`, `siswa_id`, `tanggal`, `wali_kelas_id`, `guru_bk_id` nullable, `ringkasan_masalah`, `hasil_klarifikasi` nullable, `dirujuk_pada` nullable, `penanggung_jawab_id`, `tindakan`, `status` (temuan/klarifikasi/dirujuk/tindak_lanjut/selesai), `hasil` nullable, `diselesaikan_oleh` nullable, `diselesaikan_pada` nullable | Kolaborasi wali kelas/BK sesuai penugasan; bukan tempat catatan rahasia konseling. Referensi presensi terkait harus dapat ditelusuri. |
 
 **Aturan izin–presensi:** catatan S/I oleh wali kelas langsung berlaku pada jam dalam rentang izin, termasuk sesi yang baru dibuat kemudian. Jika ada konflik versi ketika guru menyimpan, tolak seluruh kiriman dan muat ulang status terbaru. Catatan lampau dikoreksi wali kelas dengan audit, tidak membuka pemilih tanggal guru. Izin guru terpisah pada `pengajuan_izin_pegawai` sesuai persetujuan pejabat, tanpa presensi guru.
 
-**Jejak pengiriman presensi:** tabel `pengiriman_presensi` menyimpan `id`, `kunci_idempotensi` unik, `guru_id`, `tanggal`, `versi_daftar`, `versi_data`, `jumlah_diharapkan`, `jumlah_tersimpan`, `ringkasan_status`, `disimpan_pada`. Relasi `sesi_pengiriman_presensi` mengaitkan pengiriman ke sesi yang ditulis. Token yang belum commit tidak boleh dilaporkan berhasil; token tersimpan menjadi bukti hasil retry. Tambahkan versi integer pada sesi untuk konflik dua tab dan versi sumber izin; kunci sesi dalam urutan ID konsisten bila menyimpan beberapa jam agar mengurangi deadlock. `jumlah_tersimpan = jumlah_diharapkan` dan kesamaan himpunan siswa wajib diverifikasi sebelum commit. Tidak memakai mesin operasi massal per siswa untuk pengiriman kelas ini.
+**Jejak pengiriman presensi:** tabel `pengiriman_presensi` menyimpan `id`, `kunci_idempotensi` unik, `guru_id` (pengajar), `dicatat_oleh` (pengguna pelaku sebenarnya), `tanggal`, `versi_daftar`, `versi_data`, `jumlah_diharapkan`, `jumlah_tersimpan`, `ringkasan_status`, `disimpan_pada`. Relasi `sesi_pengiriman_presensi` mengaitkan pengiriman ke sesi yang ditulis. Token yang belum commit tidak boleh dilaporkan berhasil; token tersimpan menjadi bukti hasil retry. Tambahkan versi integer pada sesi untuk konflik dua tab dan versi sumber izin; kunci sesi dalam urutan ID konsisten bila menyimpan beberapa jam agar mengurangi deadlock. `jumlah_tersimpan = jumlah_diharapkan` dan kesamaan himpunan siswa wajib diverifikasi sebelum commit. Tidak memakai mesin operasi massal per siswa untuk pengiriman kelas ini.
+
+**Kontrak data tambahan untuk perubahan akademik dan pembinaan:**
+
+| Area | Data tambahan dan batasan yang wajib dimigrasikan | Bukti integritas |
+|---|---|---|
+| Presensi | `status_dasar_guru` nullable, `izin_siswa_id` nullable, sumber/status efektif dan versi; `klarifikasi_presensi` menyimpan sesi/siswa, versi sumber, status hasil, alasan, aktor/waktu. `sesi_pelajaran` menyimpan jenis pencatatan normal/susulan, pengajar nyata, pencatat dan alasan susulan. | Pembatalan izin tidak membuat H/A otomatis; konflik versi dan sesi susulan tetap atomik seluruh kelas. |
+| Identitas | `penggabungan_identitas_siswa` dengan FK asal/utama, UNIQUE asal, larangan self/cycle, alasan/aktor/waktu; konflik relasi diverifikasi sebelum commit. | Semua modul membaca identitas utama melalui pemetaan tanpa menghapus jejak FK/ID sumber historis. |
+| PKL | Segmen penempatan bertanggal, riwayat pembimbing dan versi nilai final; referensi jurnal/kehadiran/nilai tetap ke segmen asal. | Tidak overlap peserta; kuota tidak terlampaui saat request paralel; hasil revisi final dapat ditelusuri. |
+| Jadwal | Versi jadwal/rentang berlaku, pengecualian sesi dan delegasi pengganti; sesi presensi menyimpan konteks historis. | Publikasi bentrok ditolak; revisi tidak menimpa sesi yang sudah tercatat. |
+| Supervisi | Versi instrumen/indikator/rubrik, versi hasil, riwayat penanggung jawab dan verifikasi tindak lanjut. | Master baru tidak mengubah nilai lama; guru tidak dapat mengubah penilaian sendiri. |
+| Pelanggaran | Snapshot aturan/bobot/periode/kelas, versi koreksi dan status Sah/Dibatalkan dengan aktor/alasan. | Agregasi tidak menghitung versi ganda, record batal atau master bobot terbaru untuk kejadian lampau. |
 
 ## 12.7 Proses massal: progres nyata dan keamanan idempotensi
 
@@ -1314,7 +1544,7 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 - Browser mengirim **2–3 HTTP request paralel**, masing-masing mengerjakan **10–25 item**. Ini batas awal yang harus diuji pada VPS, bukan jaminan performa.
 - Klik **Jeda** mencegah pengiriman batch berikutnya; request yang telanjur berjalan tetap boleh selesai. Setelah browser ditutup, proses tidak berjalan terus otomatis; saat login lagi Admin dapat **Lanjutkan** setelah pemeriksaan status.
 - **Tidak ada Queue, Scheduler, cron aplikasi, atau worker latar belakang.** Persentase berasal dari status item yang benar-benar tersimpan di MariaDB, bukan animasi.
-- Semua endpoint proses, status, retry dan resume memeriksa role serta lisensi setiap request. Setelah jaringan putus, frontend mengambil kembali status DB sebelum meminta retry.
+- Endpoint mutasi proses/retry/resume memeriksa hak objek dan lisensi setiap request. Status/bukti hasil yang read-only tetap dapat diakses melalui jalur Core §15.1 oleh pembuat atau petugas berizin saat modul nonaktif. Setelah jaringan putus, frontend membaca bukti DB sebelum meminta retry; membaca status tidak menjalankan item baru.
 
 ## 12.8 Daftar constraint yang wajib ada sejak migrasi pertama
 
@@ -1331,11 +1561,21 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 
 ---
 
+## 12.9 Katalog rilis dan status lisensi lokal
+
+| Tabel | Kolom dan batasan minimum | Aturan |
+|---|---|---|
+| `katalog_modul` | `id`, `kode` UNIQUE, `nama` | Lima belas kode stabil. Manifest rilis pada source menetapkan modul yang sudah diimplementasikan, versi minimum skema dan kemampuan baca arsip; owner tidak dapat mengubah kesiapan rilis dari form lisensi. |
+| `lisensi_modul` | `id`, `modul_id` UNIQUE FK katalog, `aktif`, `mulai_pada` nullable, `berakhir_pada` nullable, `versi_status` integer, `pertama_diaktifkan_pada` nullable, `diubah_oleh` | Satu baris per modul per instalasi. `aktif` saja tidak cukup: fitur operasional wajib lulus kesiapan rilis/skema dan rentang lisensi. Timestamp disimpan UTC, batas diperiksa dengan zona `Asia/Jakarta`; batas akhir eksklusif. |
+| `riwayat_lisensi_modul` | `id`, `lisensi_modul_id`, `status_lama`, `status_baru`, `versi_lama`, `versi_baru`, `alasan`, `dibuat_oleh`, `created_at` | Perubahan owner ber-audit dalam transaksi yang sama. Riwayat aktivasi sah menjadi dasar kelayakan arsip; jangan mengisi seluruh flag pernah aktif lewat seeder. |
+
+Perubahan lisensi oleh owner mengunci baris `lisensi_modul`; mutasi modul memakai urutan lock yang konsisten dan memeriksa hak/rentang lisensi sebelum menulis. **Nonaktivasi manual** menunggu transaksi pendek yang sudah memegang lock selesai utuh sesuai §13.5. **Kedaluwarsa berdasarkan waktu** berbeda: transaksi memeriksa waktu server lagi sebelum commit; bila batas akhir telah terlewati, rollback seluruh transaksi dan tampilkan pesan lisensi berakhir, tanpa hasil parsial. Pemeriksaan token/bukti kemudian membedakan commit yang sudah berhasil dari rollback. Tiap batch/request baru memeriksa ulang; tidak menambah Scheduler. Seeder hanya upsert katalog kode/nama dan membuat lisensi awal nonaktif bila belum ada, tidak memperpanjang atau mengaktifkan lisensi existing. Upgrade menyimpan manifest/versi rilis dan membandingkannya dengan migration yang benar-benar terpasang sebelum memberi status siap.
+
 # 13. Permission Matrix — role dan kewenangan
 
 **Alur bagian:** Periksa Akun → Periksa Lisensi → Periksa Hak Tindakan → Periksa Lingkup → Izinkan/Tolak.
 
-**Prinsip:** role hanya menjelaskan jabatan. Izin aktual harus mengecek **(1) pengguna aktif, (2) modul berlisensi aktif, (3) permission tindakan, dan (4) lingkup data miliknya/kelas/unitnya**. Menyembunyikan menu saja tidak aman. Pemeriksaan yang sama berlaku pada URL, aksi Livewire, unduhan, dan request massal.
+**Prinsip:** role hanya menjelaskan jabatan. Izin aktual memeriksa **pengguna aktif, hak tindakan, dan lingkup objek**; fitur operasional berbayar juga mewajibkan lisensi aktif. Jalur arsip Core mengikuti §13.6: lisensi boleh nonaktif, tetapi hak arsip dan lingkup data tetap wajib. Menyembunyikan menu saja tidak aman. Pemeriksaan yang sama berlaku pada URL, aksi Livewire, unduhan, dan request massal.
 
 ## 13.1 Akses sistem inti dan panel owner
 
@@ -1387,7 +1627,7 @@ Penamaan permission tetap konsisten: `resource.action`, misalnya `siswa.view`, `
 - Pengecekan otorisasi berbasis objek: Guru A tidak boleh mengubah jurnal Guru B, wali kelas tidak boleh membaca kelas lain, siswa tidak dapat memanipulasi `siswa_id` dalam request.
 - Endpoint massal dan endpoint status operasi memeriksa pembuat/petugas berizin; angka progres operasi sensitif tidak bisa dibaca akun lain tanpa izin.
 - Akses orang tua mensyaratkan relasi wali–anak sudah diverifikasi; tidak berdasarkan pencarian NIS saja.
-- Ketika lisensi berakhir di tengah operasi massal, request berikutnya wajib berhenti dan menjelaskan status; data yang berhasil tetap tersimpan.
+- Ketika lisensi berakhir di tengah operasi massal, request **mutasi** berikutnya berhenti terkontrol; pembacaan progres/bukti melalui Core tetap tersedia sesuai hak. Data yang berhasil tetap tersimpan; lisensi aktif kembali tidak melanjutkan mutasi tanpa tindakan pengguna.
 
 ## 13.4 Akses ketika modul berakhir
 
@@ -1407,13 +1647,25 @@ Penamaan permission tetap konsisten: `resource.action`, misalnya `siswa.view`, `
 1. Katalog 15 modul tetap tersedia dalam codebase. Aktivasi/nonaktivasi **hanya mengubah konfigurasi lisensi**, bukan menginstal/menghapus source, tabel, menu template atau dependency. Core, login, owner dan dashboard tidak boleh ikut mati.
 2. Sebelum aktivasi, periksa versi aplikasi/skema dan kesiapan modul. Modul belum dirilis atau migrasi belum lengkap ditolak dengan pesan jelas; jangan mengaktifkan lalu membiarkan route error. Fitur modul lain tidak boleh memanggil komponen/relasi/modul nonaktif tanpa pemeriksaan.
 3. Simpan perubahan lisensi dalam satu transaksi dan invalidasi cache status/menu **setelah commit**. Otorisasi server memakai versi lisensi terkini setiap request; UI lama pada tab pengguna bukan bukti akses masih sah. Hindari cache per proses yang terus memperbolehkan izin lama.
-4. Mutasi modul dan perubahan lisensi memakai lock/versi lisensi secara konsisten. Transaksi yang sudah memegang izin/lock boleh selesai utuh; nonaktivasi menunggu transaksi pendek tersebut. Jika owner menonaktifkan dahulu, pengiriman berikutnya ditolak **tanpa menulis sebagian data**. Tidak membatalkan commit yang telah berhasil.
+4. Mutasi modul dan perubahan lisensi memakai lock/versi lisensi secara konsisten. Untuk nonaktivasi manual oleh owner, transaksi yang sudah memegang izin/lock boleh selesai utuh; perubahan owner menunggu transaksi pendek tersebut. Expiry berdasarkan waktu diperiksa lagi sebelum commit sesuai §12.9 dan menyebabkan rollback utuh bila sudah lewat batas, bukan penulisan sebagian. Jika owner menonaktifkan dahulu, pengiriman berikutnya ditolak **tanpa menulis sebagian data**. Tidak membatalkan commit yang telah berhasil.
 5. Halaman modul yang sedang terbuka mendapat pesan Indonesia **Modul sedang tidak aktif** beserta jalan kembali ke dashboard saat request berikutnya. Tanggapi terkontrol, bukan 500, komponen hilang, stack trace, atau redirect berulang. Request presensi yang statusnya tidak diketahui tetap dapat memeriksa bukti pengiriman miliknya melalui endpoint audit Core berizin tanpa membuka mutasi modul.
 6. Proses massal dihentikan mengirim batch baru; item sudah commit tetap tersimpan. Progres milik pengguna dapat dilihat melalui Core; proses dilanjutkan hanya setelah modul aktif dan izin valid. Sistem tidak menyatakan transaksi yang selesai sebagai gagal hanya karena lisensi berubah.
-7. Data historis tetap ada. Sediakan mode **baca/ekspor arsip** untuk pengguna yang sebelumnya berwenang dan masih memiliki hak data, termasuk setelah lisensi habis; tidak membuka mutasi atau semua data untuk owner. Daftar arsip bisa diakses dari Core, tanpa route mutasi modul aktif.
+7. Data historis tetap ada. Sediakan mode **baca/ekspor arsip** untuk pengguna yang saat ini memiliki hak arsip serta lingkup data historis yang sah, termasuk petugas pengganti dan setelah lisensi habis; tidak membuka mutasi atau semua data untuk owner. Daftar arsip bisa diakses dari Core, tanpa route mutasi modul aktif.
 8. Pasangan mandiri diuji: Lab tanpa Sarpras, PKL tanpa HUBIN, Tracer tanpa BKK/Website, Absensi tanpa Jadwal/BK/Jurnal, Jurnal tanpa semua modul lain. Master bersama tetap dapat dipakai antarmuka modul aktif tanpa membuka fitur pasangan.
 9. Website nonaktif menampilkan halaman informasi minimal pada `/`; admin tetap satu desain dan login berfungsi. Tema tersimpan tidak dihapus; aktif ulang mengembalikan tema/data sebelumnya.
 10. Tombol aktif ulang memakai pemeriksaan kesiapan yang sama, tanpa seed ulang yang menimpa data. Audit siapa, waktu, status lama/baru dan alasan; uji toggle berulang, expiry saat request, dua tab dan proses bersamaan.
+
+## 13.6 Arsip Core dan bukti transaksi setelah modul nonaktif
+
+**Alur:** Petugas Buka Arsip Core → Server Periksa Kelayakan Modul dan Hak Objek → Tampilkan Data Tersimpan → Baca/Unduh/Ekspor Sesuai Hak → Audit Akses.
+
+- Pisahkan namespace arsip dari route operasional modul. Middleware arsip memeriksa akun aktif, hak `arsip.<kode_modul>.lihat` atau `arsip.<kode_modul>.ekspor`, lingkup kelas/siswa/unit/kasus dan kemampuan pembaca arsip pada versi aplikasi. Middleware ini **tidak** memakai `module-aktif`. Menonaktifkan modul tidak mencabut hak data; menonaktifkan akun/mencabut penugasan tetap mencabut akses pada request berikutnya.
+- Kelayakan arsip mensyaratkan modul pernah diaktifkan secara sah pada instalasi dan mempunyai data yang berasal dari transaksi aplikasi atau migrasi/impor terotorisasi yang dapat ditelusuri. Riwayat pernah aktif tidak otomatis memberi pengguna hak lihat; hak saat ini dan lingkup setiap record tetap diperiksa. Modul yang belum pernah aktif, belum dirilis, atau tidak memiliki pembaca arsip yang kompatibel tidak boleh membuka tabel/data melalui parameter kode modul. Owner tidak mendapat hak data sekolah karena mengelola lisensi. Data hasil impor dari aplikasi lama baru tersedia setelah aktivasi/migrasi modul yang sah, bukan dengan mengubah flag manual dari URL.
+- Arsip hanya membaca record yang benar-benar tersimpan, relasi dan snapshot historis; filter, cetak dan ekspor sinkron diperbolehkan. Tidak menerbitkan tagihan, menyimpan jurnal, mengubah presensi, memproses item massal, memperbarui statistik dengan mutasi tersembunyi atau menjalankan aksi modul nonaktif. Total laporan dihitung dari snapshot/record tersimpan, bukan memanggil layanan mutasi modul.
+- Endpoint pemeriksaan bukti pengiriman presensi dan progres massal adalah read-only Core; pembuat dapat membaca hasil miliknya, petugas lain membutuhkan hak inspeksi dan lingkup yang sesuai. Endpoint tidak mengklaim item atau melakukan lazy recovery mutatif saat lisensi nonaktif. Lazy recovery/resume baru dijalankan pada endpoint mutasi setelah lisensi dan izin valid.
+- Ekspor/unduhan arsip tetap memakai otorisasi per objek dan kolom; tidak mengekspos isi konseling, kontak wali atau keuangan personal pada role yang hanya boleh melihat agregat. Berkas diunduh melalui Controller, tidak berupa path publik. Tindakan ekspor sensitif diaudit tanpa menyalin isi data sensitif ke log.
+- Riwayat lisensi bukan syarat bahwa pengguna yang sama harus pernah mengakses record. Petugas pengganti dengan hak arsip dan lingkup historis yang sah boleh mengambil alih; petugas lama yang telah dicabut tidak boleh tetap mengaksesnya. Ini memungkinkan sekolah membaca datanya tanpa menghidupkan kembali modul berbayar atau mempertahankan akun pegawai lama.
+- Aktivasi ulang mengembalikan akses operasional sesuai lisensi/penugasan **tanpa** mengubah data arsip. Uji akses tamu, role salah, pergantian wali/petugas, lisensi expired, kode modul yang tidak dikenal dan modul yang belum pernah dibeli.
 
 # 14. Implementation & Testing Plan — dari kode hingga produksi
 
@@ -1421,23 +1673,21 @@ Penamaan permission tetap konsisten: `resource.action`, misalnya `siswa.view`, `
 
 **Prinsip rilis:** jangan mengklaim aplikasi siap produksi hanya karena PRD lengkap. Tahap di bawah adalah gerbang kerja dan pengujian nyata. Tidak menambah modul dan tidak mengharuskan Queue/Scheduler.
 
-## 14.1 Urutan implementasi yang tidak merusak data
+## 14.1 Urutan implementasi menurut rilis R1–R4
 
-Nomor fase pada tabel ini adalah ringkasan produk, sedangkan ID pekerjaan tetap mengikuti `TASK.md`. Urutan eksekusi teknis: **F0 → skema/master F1 → F4 → penyelesaian impor F1 → F2 → F3 → F5/F6 → F7 → F8/F9**. K0–K2 dikerjakan bersama fondasi; K3 bersama QA/rilis. Kontrol lisensi minimum dari F3 disiapkan sebelum portal alumni dibuka. F4 harus tersedia sebelum impor, kenaikan, kelulusan, atau tagihan massal. Desain dan tes model tagihan/pembayaran disiapkan dalam F2; UI Keuangan tetap F5.09.
+Nomor F/K pada `TASK.md` adalah ID pekerjaan stabil, bukan paket produk. **Bab 10 adalah satu-satunya pengelompokan rilis.** Setiap rilis menjalankan QA, UAT, arsip/lisensi, upgrade dan handover untuk fitur yang ditambahkan beserta regresi fitur yang sudah terpasang.
 
-| Fase | Implementasi | Syarat selesai |
+| Tahap | Implementasi | Syarat selesai dan bukti |
 |---|---|---|
-| 0. Fondasi proyek | Laravel 13 + PHP 8.5 + Livewire 4 + Tailwind 4 + MariaDB; konfigurasi aplikasi dan `.env.example` aman | Aplikasi stabil, login/logout, migrasi dan rollback teruji di staging. |
-| 1. Data induk (F1 + F4 untuk impor) | Users/peran, profil sekolah, tahun ajaran, jurusan, kelas, siswa, guru, wali; impor validasi | ID siswa permanen, FK/unique berjalan, hasil impor jelas. |
-| 2. Akademik historis (F2, sesudah F4) | Enrolmen, penempatan, pindah kelas, kenaikan kelas, program 3/4 tahun, kelulusan | Riwayat tidak terhapus; 600 siswa bisa diproses/diulang dengan progres nyata. |
-| 3. Alumni & tagihan | Alumni lama/baru, riwayat kerja/kuliah/usaha, desain tagihan/pembayaran historis | Lulusan tetap terhubung ke tagihan; alumni lama tidak dibuat siswa fiktif. |
-| 4. Super Admin lokal | Aktivasi 15 modul, masa berlaku, catatan pembayaran manual, audit, pengaturan owner | Modul tidak aktif ditolak backend; tidak ada akses bebas owner ke data sensitif. |
-| 5. Modul operasional awal | Surat (tanpa file juga boleh), Website (menu dinamis), Absensi+Izin, Poin Pelanggaran | Alur lengkap per role, modal/konfirmasi/loading lulus uji. |
-| 6. Modul pembelajaran & PKL | PKL, Jurnal, Jadwal, BK | Nilai industri diinput guru; data siswa mengikuti enrolmen tepat. |
-| 7. Modul lain | Keuangan, BKK, Tracer, HUBIN, Sarpras, Lab, Supervisi | Integrasi data bersama tidak ganda; bisa aktif sendiri-sendiri. |
-| 8. Pilot & rilis | UAT sekolah, tes beban, pengetesan keamanan aplikasi, verifikasi pemulihan data bersama operator, SOP support aplikasi | Semua **release gate** Bab 14.4 terpenuhi. |
+| Fondasi R1 | F0 + K0–K2 terkait; skema/master F1 dan penugasan, katalog 15 modul, owner/lisensi F3; Core selalu berjalan | Login/MFA owner, role/lingkup, route Core, instalasi dan migration aman. Katalog bukan klaim 15 modul sudah selesai. |
+| Data/histori R1 | F4 sebelum impor F1.07; F2 siklus akademik/kelulusan dan profil alumni Core | Transaksi per item massal, ID siswa/histori utuh, 600 siswa sintetis dan retry lulus; registrasi alumni mandiri belum dibuka sebelum BKK/Tracer siap. |
+| Operasional R1 | F5.03 Absensi/Izin dan F5.06 Jurnal Kegiatan, integrasi F6 yang relevan | Presensi hari ini satu kelas atomik, S/I wali langsung, konfirmasi tanpa tenggat, pendampingan dasar, jurnal kegiatan/hasil tanpa jadwal. OP dan UAT R1 lulus. |
+| Modul R2 | F5.02 Surat, F5.01 Website/5 tema, F5.04 Pelanggaran, F5.08 BK, F5.07 Jadwal | Semua alur/pengecualian modul R2, regresi R1 serta independensi modul lulus. |
+| Modul R3 | F5.05 PKL, F5.12 HUBIN, F5.13 BKK, F5.14 Tracer | Master mitra/alumni bersama, portal verifikasi serta histori/snapshot lulus; regresi R1–R2 yang terpasang. |
+| Modul R4 | F5.09 Keuangan, F5.10 Sarpras, F5.11 Lab, F5.15 Supervisi | Tagihan/pembayaran historis, aset/stok dan supervisi lulus; regresi fitur terdahulu yang terpasang. |
+| QA/handover setiap rilis | K3, F7–F9 sesuai cakupan dan uji upgrade §14.6 | Bukti fitur+keamanan+UAT, tag/schema/runtime, jalur upgrade dan pemulihan; modul di luar cakupan tetap belum siap/nonaktif. |
 
-**Catatan implementasi:** fase 3 menyiapkan model data keuangan dan alumni walaupun antarmuka modul Keuangan/BKK/Tracer dibangun belakangan. Ini mencegah perubahan besar pada relasi `siswa`, `profil_alumni`, dan tagihan saat modul baru diaktifkan.
+F2.14 boleh menyiapkan kontrak/model tagihan dan fixture integritas saat fondasi; ini **bukan** layanan Keuangan siap pakai. Pengujian transaksi uang nyata dan kriteria tagihan/cicilan menjadi gerbang R4 saat modul Keuangan masuk rilis. Demikian pula profil alumni dari kelulusan adalah Core, sedangkan registrasi/lamaran/survei adalah R3. Jangan membangun frontend modul lain hanya untuk memenuhi gerbang R1.
 
 ## 14.2 Standar semua halaman agar pengalaman pengguna konsisten
 
@@ -1501,10 +1751,10 @@ Tes pada Bab 5 (`Sxx`, `Mxx`, `Axx`) dan Bab 9 (`Uxx`) **tetap berlaku**; tabel 
 | Hak akses aman | Setiap role diuji pada halaman, Livewire action, ekspor, dan API; tidak ada kebocoran data lintas peran. |
 | Proses massal stabil | Tes paralel, pengulangan request, koneksi putus, browser ditutup, progres akurat, dan resume lulus. |
 | Integritas DB | FK/unique terpasang, transaksi konsisten, audit perubahan sensitif tersedia. |
-| Data sensitif terlindungi | HTTPS aktif, file privat, otorisasi unduh, keamanan akun dan registrasi alumni telah diuji. |
+| Data sensitif terlindungi | HTTPS, file privat, otorisasi dan akun diuji sejak R1; registrasi alumni diuji saat BKK/Tracer masuk rilis. |
 | Prasyarat infrastruktur (di luar PRD aplikasi) | Lingkungan hosting siap dan diamankan oleh penanggung jawab VPS; developer hanya memverifikasi aplikasi dapat dijalankan. |
 | Backup nyata | Operator infrastruktur bertanggung jawab membuat dan menguji restore data. Developer memverifikasi integritas aplikasi pada salinan yang dipulihkan. |
-| UAT sekolah | Admin, Tata Usaha, Guru, Bendahara, Koordinator PKL, serta petugas lain yang relevan berhasil menyelesaikan tugas utamanya. |
+| UAT sekolah | Pengguna pada cakupan rilis menuntaskan tugasnya: R1 Admin/Guru/Wali/BK pendamping/Pimpinan/Owner; Bendahara, Koordinator PKL dan petugas modul lain diuji ketika fiturnya dirilis atau sudah terpasang dan terdampak regresi. |
 | Dokumentasi minimum | Panduan Admin Sekolah, langkah ekspor data, SOP koreksi transaksi, dan prosedur pemulihan tersedia. |
 | Pilot | Satu SMK menggunakan alur utama, masalah kritis telah ditutup sebelum penjualan lebih luas. |
 
@@ -1527,6 +1777,7 @@ Tidak ada PPDB, UKK, absensi guru, modul perizinan tersendiri, akun pembimbing i
 - **Penerapan:** operator menyediakan backup/salinan pemulihan DB + storage sebelum perubahan. Developer menyediakan urutan perintah rilis (install dependency terkunci, build, maintenance singkat bila perlu, migrate noninteraktif, cache config/route/view, smoke test) dengan prasyarat dan estimasi berdasarkan uji. Tunggu transaksi aktif selesai; jangan mematikan request simpan kelas di tengah commit.
 - **Cache/browser:** aset memiliki versi/hash; setelah rilis, tab lama yang mengirim versi payload tidak cocok mendapat pesan muat ulang dan tidak menyimpan data parsial. Invalidasi cache lisensi/menu setelah deploy; uji komponen Livewire dan semua tema terhadap aset baru.
 - **Rollback realistis:** rollback source hanya boleh bila skema masih kompatibel dengan source lama. Jangan menjanjikan `migrate:rollback` selalu aman. Jika perubahan tidak kompatibel, gunakan perbaikan maju atau pemulihan DB/storage oleh operator dengan pencatatan transaksi setelah backup dan persetujuan dampak kehilangan data; aplikasi tetap ditutup sampai konsisten.
+- **Pembaca arsip lintas versi:** migration/upgrade wajib menguji reader arsip untuk seluruh modul yang pernah aktif, meski sekarang nonaktif. Manifest menyatakan versi minimum skema dan reader yang didukung. Jika jalur versi lama belum didukung, preflight menolak upgrade sebelum perubahan data dan menyebut rilis perantara; jangan membuka arsip yang salah atau mengaktifkan modul untuk memaksa migrasi.
 - **Bukti rilis:** catat versi awal/akhir, migrasi, perintah sebenarnya, hasil test, waktu henti, tindakan pemulihan dan isu tersisa pada TASK. Upgrade mayor mengikuti panduan resmi framework, audit dependency dan regresi fitur, tanpa menurunkan versi stack yang disepakati secara diam-diam.
 
 ## 14.7 Skenario penerimaan keputusan operasional terbaru
@@ -1548,6 +1799,36 @@ Tidak ada PPDB, UKK, absensi guru, modul perizinan tersendiri, akun pembimbing i
 | OP11 | Aktif ulang setelah expiry dan setelah upgrade | Data, relasi, lisensi pilihan, media dan tema tetap; kesiapan skema dicek dan tidak seed reset. |
 | OP12 | Editor mengganti lima tema berulang dan mencoba kode tema invalid | Publik mengikuti tema terpilih tanpa kehilangan konten/URL; invalid fallback aman; seluruh admin tetap desain sama. |
 | OP13 | Upgrade fitur atau framework dari versi lama dengan data dan modul nonaktif | Migrasi aman, backfill dapat dilanjutkan, smoke/regresi lulus; kegagalan tidak menyebabkan source/skema tidak kompatibel dibuka ke pengguna. |
+
+## 14.8 Pemetaan penyelesaian audit proses bisnis
+
+**Alur audit:** Temuan → Tetapkan Aturan dan Penanggung Jawab → Selaraskan Status/Skema → Uji Skenario Normal dan Koreksi → Catat Bukti Implementasi.
+
+Tabel ini menutup temuan pada **spesifikasi**, bukan menyatakan fitur sudah diimplementasikan. Setiap verifikasi di bawah masih wajib dijalankan pada rilis yang memuat fiturnya; bukti dicatat di TASK. Semua alur koreksi tetap memeriksa hak tindakan/objek, versi data, lisensi operasional dan audit; arsip baca tidak boleh dipakai untuk mutasi.
+
+| ID audit | Masalah yang ditutup | Acuan kontrak | Verifikasi wajib saat implementasi |
+|---|---|---|---|
+| AU01 | Rincian tunggakan pada kelulusan berpotensi bocor | §5.5, §13 | Admin akademik tanpa izin keuangan tetap bisa meluluskan tanpa menerima nominal/rekaman pembayaran pada UI, respons atau ekspor. |
+| AU02 | Izin bertumpuk, dibatalkan atau siswa ternyata hadir | Modul 03, §12.6 | Batalkan prefill S/I tanpa observasi guru → Belum Diisi; uji konflik dan pemulihan observasi yang sah. Tidak ada auto H/dua status sah; hasil klarifikasi tersimpan. |
+| AU03 | Arsip saat lisensi nonaktif belum punya jalur akses | §13.4–13.6, §15.1 | Petugas berizin baca/ekspor arsip tanpa lisensi aktif; pengguna salah lingkup ditolak dan endpoint mutasi tetap tertutup. |
+| AU04 | Rilis R1 tercampur kewajiban R2–R4 | Bab 10, §14.1/14.4, Bab 18 | R1 bisa diterima dengan dua modulnya; fitur belum dirilis tidak dapat diaktifkan atau diklaim lulus. |
+| AU05 | PKL pindah tempat/pembimbing, kuota dan koreksi nilai | Modul 01, §12.6 | Pindah penempatan tanpa kehilangan jurnal/nilai lama; dua petugas berebut slot terakhir tidak melebihi kuota. |
+| AU06 | Pemeriksaan ulang jurnal setelah koreksi | Modul 02, §12.6 | Koreksi jurnal diperiksa mencabut status pemeriksaan versi lama; tidak mengubah jurnal pengguna lain. |
+| AU07 | Seluruh sesi terlewat sampai berganti hari | Modul 03, §4.2.2 | Guru tetap tidak memilih tanggal; wali/delegasi membuat susulan beralasan tanpa menyamar sebagai guru pengisi. |
+| AU08 | Nomor surat eksternal, pembatalan dan nomor terpakai | Modul 04, §12.6 | Arsip eksternal mempertahankan nomor asal; surat final batal masih menyimpan nomor dan nomor tidak dipakai ulang. |
+| AU09 | Salah tagihan, koreksi pembayaran dan pengembalian uang | Modul 05, §12.4 | Pembatalan tagihan lunas tidak menghapus pembayaran; koreksi administratif tidak otomatis mencatat uang keluar; refund nyata tercatat terpisah dan tidak ganda. |
+| AU10 | Batas lamaran, tenggat, penarikan dan hasil seleksi | Modul 06, §12.6 | Dua klik menghasilkan satu lamaran; tenggat dicek server; lamaran ditarik dan hasil dikoreksi tetap berhistori. |
+| AU11 | Aset unit, hilang/rusak dan pengembalian sebagian | Modul 07, §12.5 | Setiap aset unit punya ID; satu pengembalian tidak menutup unit lain yang masih dipinjam. |
+| AU12 | Konseling langsung berbeda dari rujukan presensi | Modul 08, modul 03 | Siswa boleh langsung meminta konseling; wali kelas tidak otomatis menerima isi privat atau menjadi gerbang wajib. |
+| AU13 | Revisi jadwal, pengganti, batal dan bentrok | Modul 09, §12.6 | Perubahan jadwal berlaku efektif; sesi historis tidak ditimpa dan bentrok tidak dapat dipublikasikan. |
+| AU14 | Form tracer berubah dan koreksi jawaban historis | Modul 10, §12.6 | Jawaban lama tetap terkait pertanyaan versi asal; koreksi jawaban memiliki versi, bukan overwrite tanpa jejak. |
+| AU15 | MoU berakhir/revisi membatalkan PKL secara keliru | Modul 11, §12.6 | MoU diarsip/berakhir tidak menghapus mitra atau menghentikan PKL yang sudah berjalan. |
+| AU16 | Instrumen supervisi, pengganti, nilai dan selesai | Modul 12, §12.6 | Hasil lama memakai instrumen asal; jadwal/nilai koreksi diaudit, penyelesaian punya hasil dan penanggung jawab. |
+| AU17 | Pembatalan ruang, stok fisik dan pengembalian Lab | Modul 13, §12.5 | Pembatalan membebaskan slot; stok fisik disesuaikan lewat mutasi beralasan tanpa edit saldo langsung atau stok minus. |
+| AU18 | Bobot pelanggaran berubah dan kejadian dibatalkan | Modul 14, §12.6 | Perubahan master bobot tidak menghitung ulang kejadian lama; pembatalan sah mengurangi rekap dengan audit. |
+| AU19 | Revisi konten terbit dan media sedang digunakan | Modul 15, §12.6 | Simpan draf tidak mengubah publik; media terpakai tidak terhapus dan tema/URL tetap utuh. |
+| AU20 | Tahun baru aktif tetapi siswa belum ditempatkan | §5.6, §12.2 | Siswa tertunda muncul jelas; tidak diberi kelas lama/H/Alpa otomatis dan penempatan sah menyelesaikan kondisi. |
+| AU21 | Dua identitas siswa/alumni telanjur terbentuk | §5.6, §5.10, §12 | Preview konflik akun/riwayat sebelum penggabungan; rollback menyeluruh saat konflik dan ID pengganti tetap dapat ditelusuri. |
 
 # 15. Kontrak route aplikasi dan koneksi database — wajib diikuti
 
@@ -1587,8 +1868,14 @@ Bagian ini mengunci alamat URL **di setiap instalasi sekolah**. Contoh `smka.sch
 | `/admin/pelanggaran` | Tata tertib, poin dan pembinaan | Permission Kesiswaan | `pelanggaran` |
 | `/admin/website` | CMS, menu/submenu dinamis | Permission Editor Website | `website` |
 | `/berkas/{berkas}/unduh` | Unduh dokumen privat melalui Controller | Role + policy per objek + lisensi bila terkait | Sesuai asal berkas |
+| `/admin/arsip/{kode_modul}` | Daftar/filter arsip tersimpan, read-only | `auth` + hak arsip lihat + lingkup objek + kelayakan arsip §13.6 | Core; tidak memakai `module-aktif` |
+| `/admin/arsip/{kode_modul}/{jenis}/{id}` | Detail snapshot/record arsip | Hak lihat per objek dan jenis resource allowlist | Core; kelayakan arsip tetap wajib |
+| `POST /admin/arsip/{kode_modul}/ekspor` | Ekspor sinkron arsip sesuai filter/hak kolom | Hak ekspor + CSRF + lingkup objek; audit ekspor | Core; tidak membuka mutasi bisnis |
+| `/admin/proses/{operasi}/status` | Progres massal read-only tanpa claim/recovery | Pembuat atau petugas inspeksi berizin pada lingkup operasi | Core |
+| `/admin/bukti-presensi/{token}` | Bukti hasil pengiriman, tidak memproses ulang | Pembuat atau petugas inspeksi berizin pada lingkup kelas | Core |
+| `/admin/arsip/{kode_modul}/berkas/{berkas}/unduh` | Unduh berkas arsip privat | Hak arsip + otorisasi berkas/kolom + kelayakan arsip | Core |
 
-**Kontrak routing:** route publik yang disebut di tabel (website, login/reset, registrasi alumni) mengikuti batasan publiknya; tidak diwajibkan login. Seluruh route privat dan aksi Livewire privat harus melewati `auth`, pemeriksaan role/permission **dan** lingkup objek (siswa/kelas yang ditugaskan), serta `module-aktif` jika masuk modul berbayar. Route owner wajib terpisah dari operator sekolah; `owner` **bukan** bypass untuk catatan BK, pembayaran siswa, data sensitif siswa. Gunakan HTTP method POST/PATCH/DELETE untuk mutasi dan validasi CSRF; **jangan melakukan mutasi melalui GET**. Alumni yang hanya memiliki riwayat tidak boleh melihat profil siswa lain. Nama path tidak menjadi mekanisme keamanan.
+**Kontrak routing:** route publik yang disebut di tabel (website, login/reset, registrasi alumni) mengikuti batasan publiknya; tidak diwajibkan login. Seluruh route privat dan aksi Livewire privat harus melewati `auth`, pemeriksaan role/permission **dan** lingkup objek (siswa/kelas yang ditugaskan), serta `module-aktif` untuk fitur **operasional** modul berbayar. Route arsip/bukti/progres Core pada tabel adalah pengecualian pemeriksaan lisensi aktif, bukan pengecualian autentikasi atau otorisasi objek. Parameter kode modul/jenis resource memakai allowlist tetap; `id`/token bukan bukti kepemilikan dan tidak boleh dipakai membaca model/path arbitrer. Route owner wajib terpisah dari operator sekolah; `owner` **bukan** bypass untuk catatan BK, pembayaran siswa, data sensitif siswa. Gunakan HTTP method POST/PATCH/DELETE untuk mutasi dan validasi CSRF; **jangan melakukan mutasi melalui GET**. Alumni yang hanya memiliki riwayat tidak boleh melihat profil siswa lain. Nama path tidak menjadi mekanisme keamanan.
 
 ## 15.2 Konfigurasi Laravel dan MariaDB (lingkup aplikasi)
 
@@ -1671,7 +1958,9 @@ Bab 12 mendeskripsikan tabel utama; migration nyata harus mempertahankan aturan 
 | `pembayaran` | FK tagihan, `UNIQUE(nomor_kuitansi)`; transaksi tagihan terkunci sebelum menambah pembayaran | Tidak overpayment atau kuitansi ganda |
 | `aset` | Identitas aset unit unik; Lab merujuk `aset.id` yang sama; bukan tabel aset duplikat | Sarpras dan Lab konsisten |
 | `sesi_pelajaran` | FK kelas/mapel/guru, UNIQUE (`kelas_id`, `tanggal`, `jam_ke`); waktu sesi tidak bertabrakan untuk kelas sama | Satu sesi sah per jam kelas, jadwal opsional |
-| `kehadiran_siswa` | FK sesi/siswa/penempatan; UNIQUE (`sesi_pelajaran_id`, `siswa_id`); konfirmasi hanya wali kelas binaan | Presensi per jam tidak tertimpa; koreksi diaudit dan dikonfirmasi ulang |
+| `kehadiran_siswa` | FK sesi/siswa/penempatan; UNIQUE (`sesi_pelajaran_id`, `siswa_id`); status dasar guru nullable, FK izin nullable, sumber efektif/versi dan riwayat klarifikasi; konfirmasi hanya wali/delegasi berizin | Status per jam tidak tertimpa, pembatalan izin bukan auto H/A, koreksi diaudit dan dikonfirmasi ulang |
+| `klarifikasi_presensi` | FK sesi/siswa/sumber izin bila ada; versi sumber yang diperiksa, status hasil, alasan, aktor/waktu; record lama tidak ditimpa | Keputusan wali tidak terpakai untuk versi izin baru tanpa pemeriksaan ulang |
+| `sesi_pelajaran` susulan | Tanggal kejadian, guru sebenarnya, pencatat berizin, jenis normal/susulan, alasan; tetap UNIQUE kelas/tanggal/jam dan seluruh siswa disimpan atomik | Sesi lampau hanya melalui wali/delegasi, bukan manipulasi endpoint guru hari ini |
 | `item_operasi_massal` | `UNIQUE(operasi_id, kunci_entitas)`; item bersifat idempotent | Retry/dua tab tidak menggandakan mutasi |
 | `peran_pengguna`, `hak_akses_peran` | UNIQUE pasangan masing-masing FK | Peran/hak tidak terpasang berkali-kali |
 
@@ -1692,7 +1981,7 @@ Gunakan `RESTRICT` atau strategi arsip/koreksi untuk relasi historis penting, bu
 
 | Pemeriksaan wajib | Bukti minimal |
 |---|---|
-| Semua URL pada Bab 15 dan akses role/lisensi | Feature tests untuk tamu, pengguna salah role, lisensi nonaktif, URL langsung dan Livewire action |
+| Route Core dan URL modul dalam rilis yang diuji | Feature tests untuk tamu, role salah, lisensi nonaktif, URL/Livewire langsung; route modul belum siap ditolak terkontrol dan tidak diklaim sudah berfungsi |
 | Konfigurasi DB dan koneksi | koneksi MariaDB dikonfigurasi aman lewat environment; migration FK/UNIQUE dan transaksi concurrent lulus (pengamanan host database oleh tim infrastruktur) |
 | Routing Laravel | Semua named routes, redirect, reset password, dan tautan bekerja pada host yang disediakan deployment; tidak mempercayai Host input mentah |
 | Akses owner dan akun | MFA owner, rate limit, CSRF, session aman, tidak ada password default |
@@ -1709,12 +1998,12 @@ Gunakan `RESTRICT` atau strategi arsip/koreksi untuk relasi historis penting, bu
 
 **Alur bagian:** Kumpulkan Bukti → Periksa Cakupan Rilis → UAT → Putuskan Handover/NO-GO.
 
-PRD adalah spesifikasi, bukan bukti aplikasi berfungsi. Status **READY FOR APP HANDOVER** hanya boleh diberikan jika semua kriteria berikut mempunyai bukti tes, URL layar atau nama test, dan catatan penguji:
+PRD adalah spesifikasi, bukan bukti aplikasi berfungsi. Status **READY FOR APP HANDOVER** menyebut **rilis target dan daftar modul**, bukan seluruh katalog. Semua kriteria Core/keamanan wajib; kriteria modul hanya berlaku pada modul dalam cakupan rilis atau yang sudah terpasang dan terdampak regresi. Item di luar cakupan dicatat **Belum masuk rilis**, tidak dicentang lulus dan tidak menghalangi R1. Bukti tes, URL layar atau nama test dan penguji wajib untuk setiap kriteria yang berlaku:
 
 1. Seluruh modul yang dinyatakan masuk rilis sudah berjalan dari tampilan sampai MariaDB (bukan mock data HTML), dilengkapi tes role, lisensi, dan kegagalan input. Modul yang belum siap **tidak boleh dipasarkan sebagai aktif**.
-2. Core System menangani tambah/impor siswa, siswa pindah kelas, kenaikan kelas massal, kelas XII→XIII untuk program empat tahun, kelulusan kelas akhir, alumnisasi tanpa mengganti identitas, dan alumni lama registrasi/verifikasi mandiri.
-3. Tagihan/cicilan/riwayat pembayaran mempertahankan snapshot tarif dan kelas saat diterbitkan; identitas siswa dan alumni tetap terhubung; perubahan historis yang salah memakai koreksi terotorisasi.
-4. Sarpras dan Laboratorium berbagi master aset; perizinan siswa+guru satu modul dengan absensi siswa (tanpa absensi guru); PKL menerima input nilai dari guru tanpa akun industri; surat boleh tanpa file; menu CMS dinamis.
+2. Sejak R1 Core menangani tambah/impor siswa, pindah kelas, kenaikan/kelulusan, program empat tahun dan profil alumni dari kelulusan tanpa mengganti identitas. Registrasi/verifikasi mandiri alumni lama merupakan gerbang R3 ketika BKK/Tracer dirilis, bukan syarat R1.
+3. Saat Keuangan masuk R4, tagihan/cicilan/pembayaran mempertahankan snapshot tarif/kelas dan relasi siswa/alumni; koreksi serta pengembalian uang nyata mengikuti alur berotorisasi. R1 hanya menguji kontrak fondasi terkait jika skema tersebut sudah disiapkan.
+4. R1 lulus presensi/izin siswa-guru dan jurnal kegiatan. R2 lulus surat tanpa file, CMS/menu/tema serta pembinaan terkait. R3 lulus PKL nilai kertas oleh guru dan alumni. R4 lulus aset Sarpras–Lab bersama, stok dan supervisi. Nilai kesiapan hanya diberikan kepada modul yang benar-benar masuk rilis tersebut.
 5. Pemrosesan massal 600 siswa sintetis dan retry/dua browser/koneksi putus tidak menghasilkan duplikasi. Persen progress sesuai data commit; tombol Jeda hanya menghentikan pengiriman batch baru.
 6. Semua layar penting menampilkan status loading, pesan validasi, konfirmasi modal sebelum tindakan berisiko, modal ringkasan hasil, empty state, dan error yang tidak mengekspos detail sensitif.
 7. Uji autentikasi, MFA owner, permission object-level, session, CSRF, IDOR, sanitasi CMS, upload privat, dan unduh berizin lulus. Dependency audit tidak menunjukkan kerentanan kritis yang belum ditangani.
