@@ -47,6 +47,8 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 **Acuan tabel bisnis:** `siswa`, `tahun_ajaran`, `kepesertaan_siswa`, `penempatan_kelas_siswa`, `profil_alumni`, `tagihan`, `pembayaran`, `operasi_massal`, dan `item_operasi_massal`; rincian tabel/kolom lain mengikuti PRD Bab 12. Jangan membuat tabel paralel dengan nama Inggris.
 
+**Acuan fitur dan navigasi:** PRD §4.3 memuat daftar fitur dan §4.4 memuat menu/submenu, isi layar, tindakan dan batas akses 13 role. Tidak menambah modul atau role. Kewajiban jurnal guru berlaku pada hari mengajar dan modul aktif; izin wali bisa dicatat dari luar aplikasi tanpa akun wali.
+
 ## K — Kontrak routing, database dan keamanan aplikasi (wajib sebelum coding modul)
 
 **Acuan:** PRD Bab 15–18. Checklist hanya untuk source code, database secara logis, keamanan aplikasi, QA, dan handover. Pengadaan/konfigurasi infrastruktur tidak menjadi tugas developer.
@@ -99,7 +101,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F0.02 Siapkan `.env.example` tanpa rahasia, koneksi MariaDB, timestamp UTC, tampilan/tanggal efektif `Asia/Jakarta`, dan storage privat.
 - [ ] F0.03 Gunakan modular monolith sederhana dalam struktur Laravel standar: routes, Controllers, Livewire, Models, Middleware dan resources; kelompokkan per fitur seperlunya tanpa paket/lapisan tambahan. Kode modul harus stabil.
 - [ ] F0.04 Siapkan login, logout, reset password, session, CSRF, rate limit login, dan pembuatan Super Admin pertama yang aman.
-- [ ] F0.05 Pisahkan layout `/owner`, `/admin`, portal siswa/alumni sesuai hak akses; implementasikan sidebar hanya untuk modul aktif.
+- [ ] F0.05 Terapkan rincian menu per role/penugasan PRD §4.4 dan daftar fitur §4.3; pisahkan layout `/owner`, `/admin`, portal siswa/alumni sesuai hak akses; implementasikan sidebar hanya untuk modul aktif.
 - [ ] F0.06 Buat komponen UI reusable: tabel, pencarian/filter, empty state, badge status, pagination, toast.
 - [ ] F0.07 Buat modal reusable untuk konfirmasi, error penting, hasil proses; fokus keyboard, escape/close aman, responsif HP.
 - [ ] F0.08 Implementasikan skeleton/indikator loading, spinner pada tombol, disable double-submit, validasi per field.
@@ -200,7 +202,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 | 03 | `absensi_izin` | **Presensi siswa per jam pelajaran**, konfirmasi wali kelas, penanganan bersama BK, izin siswa/guru dan penyelarasan per jam | Guru mapel presensi tiap jam → wali kelas konfirmasi → wali kelas bersama BK tindak lanjut; izin sesuai pejabat berwenang | `08-absensi.html` |
 | 04 | `pelanggaran` | Tata tertib, bobot, catat, validasi, pembinaan, keberatan | Guru catat → Kesiswaan validasi → BK tindak lanjut | `13-pelanggaran.html` |
 | 05 | `pkl` | Mitra, penempatan, jurnal, absensi, monitoring, nilai industri **diinput guru dari kertas** | Koordinator tempatkan → siswa jurnal → guru pantau/input nilai → laporan | `07-pkl.html` |
-| 06 | `jurnal_guru` | Isi jurnal, riwayat, pemeriksaan, rekap | Guru isi → Waka monitor | `14-modul-lain.html` |
+| 06 | `jurnal_guru` | Jurnal harian wajib setiap pertemuan mengajar, draf/kirim/koreksi, monitoring kelengkapan, rekap | Guru isi → Waka monitor | `14-modul-lain.html` |
 | 07 | `jadwal` | Hari/jam, pembagian guru, jadwal kelas, deteksi bentrok, cetak | Waka susun → cek bentrok → terbit | `14-modul-lain.html` |
 | 08 | `bk` | Konseling, jadwal, tindak lanjut, statistik tanpa mengumbar rahasia | Guru BK tangani → tindak lanjut → rekap terbatas | `14-modul-lain.html` |
 | 09 | `keuangan` | Tarif, tagihan, cicilan, kuitansi, tunggakan, koreksi/void ber-audit | Bendahara terbitkan → terima/catat → laporan | `09-keuangan.html` |
@@ -244,7 +246,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F5.03 `absensi_izin` — tabel `sesi_pelajaran`, `kehadiran_siswa` dan `tindak_lanjut_presensi` sesuai PRD §12.6, sesi per jam, input guru mapel, konfirmasi wali kelas, penanganan bersama BK, rekap dan izin per rentang waktu; UI/backend/otorisasi dan tes selesai, tanpa presensi guru.
 - [ ] F5.04 `pelanggaran` — UI + backend + role + test selesai (validasi sebelum poin final).
 - [ ] F5.05 `pkl` — UI + backend + role + test selesai (**tanpa akun industri**).
-- [ ] F5.06 `jurnal_guru` — UI + backend + role + test selesai.
+- [ ] F5.06 `jurnal_guru` — jurnal harian wajib per pertemuan, field materi/kegiatan/refleksi, draf/kirim/koreksi, monitoring sudah/belum diisi dan rekap; uji penugasan, duplikasi dan independensi dari Jadwal/Absensi sesuai PRD Bab 7 modul 02.
 - [ ] F5.07 `jadwal` — UI + backend + role + test selesai (tanpa generator rumit).
 - [ ] F5.08 `bk` — UI + backend + role + test selesai (data rahasia dibatasi).
 - [ ] F5.09 `keuangan` — UI + backend + role + test selesai (histori tagihan aman).
@@ -254,6 +256,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 - [ ] F5.13 `bkk` — lowongan, lamaran/CV opsional, status seleksi dan laporan; gunakan registrasi/profil alumni F2, uji BKK aktif tanpa Tracer/Website.
 - [ ] F5.14 `tracer` — periode/form survei, snapshot jawaban historis dan laporan agregat; aktivitas alumni paralel; uji Tracer aktif tanpa BKK/Website dan perubahan profil tidak menimpa jawaban lama.
 - [ ] F5.15 `supervisi` — UI + backend + role + test selesai.
+- [ ] F5.16 Implementasikan pencatatan izin wali di luar aplikasi (telepon/WhatsApp/surat/tatap muka), identitas/kanal/waktu pelapor, lampiran opsional dan keputusan pejabat terpisah; tidak mewajibkan akun wali atau integrasi WhatsApp (PRD Bab 7 modul 03 dan §12.6).
 
 ## F6 — Integrasi data lintas modul
 
@@ -290,6 +293,9 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 **Selesai jika:** tidak ada bug kritis/tinggi terbuka; tes kritis lulus; pengguna bisa menyelesaikan alur utama tanpa instruksi teknis.
 
 - [ ] F7.14 Uji guru mapel mengisi tiap jam hanya pada sesi ditugaskan; siswa sama bisa Hadir pada jam pertama dan Alpa pada jam berikutnya tanpa tertimpa. Wali kelas lain ditolak mengonfirmasi; koreksi meminta konfirmasi ulang; sesi kosong bukan Alpa; izin parsial tidak mengubah jam lain; wali kelas dan BK menindaklanjuti tanpa membocorkan konseling. Uji alur saat modul Jadwal/BK tidak aktif.
+
+- [ ] F7.15 Uji jurnal setiap pertemuan mengajar: draf belum selesai, kirim tanpa field wajib ditolak, guru lain ditolak, koreksi ber-audit, hari tidak mengajar bukan kekurangan, satu jurnal beberapa jam tidak menggabungkan presensi per jam; modul tetap berlisensi.
+- [ ] F7.16 Uji menu tiap role/penugasan sesuai PRD §4.4, lisensi aktif/nonaktif, gabungan role tanpa duplikasi, akses URL langsung dan ekspor; wali tanpa akun tetap dapat menyampaikan izin melalui petugas dan menjalani keputusan sah.
 
 ## F8 — Validasi rilis aplikasi (infrastruktur terpisah)
 
