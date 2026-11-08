@@ -6,7 +6,7 @@
 > Gunakan checkout yang sudah ada; setiap tugas cloud sudah terisolasi dan tidak memerlukan Git worktree baru.
 
 
-**Versi:** 1.6 (App-Only, selaras PRD 4.8) · **Status:** Belum dimulai (semua kotak tugas masih kosong)
+**Versi:** 1.7 (App-Only, selaras PRD 4.9) · **Status:** Belum dimulai (semua kotak tugas masih kosong)
 **Acuan utama:** [`PRD.md`](PRD.md)  
 **Instruksi coding:** bagian Panduan implementasi dalam dokumen ini  
 **Referensi UI:** [`prototype/index.html`](prototype/index.html) dan prototipe HTML lainnya.
@@ -51,7 +51,7 @@ Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controlle
 
 ## Keputusan operasional dan kontrak rilis terbaru
 
-PRD modul 02/03, §4.2.2, Bab 10, §13.5 dan §14.6 adalah acuan: jurnal kegiatan/hasil harian, presensi hari ini satu kelas atomik, S/I wali langsung, konfirmasi tanpa batas waktu, tanpa kalender akademik, 13 role dengan penugasan rinci, rilis R1–R4 serta upgrade aman. Kalender/libur bukan prasyarat input. Transaksi per item berlaku pada operasi massal; transaksi seluruh daftar berlaku pada kirim presensi kelas, jangan dicampur.
+PRD modul 02/03, §4.2.2, Bab 10, §13.5 dan §14.6 adalah acuan: jurnal kegiatan/hasil harian, presensi hari ini satu kelas atomik, S/I wali langsung, konfirmasi tanpa batas waktu, tanpa kalender akademik, 1 guru–1 kelas tanpa kelompok, 13 role dengan penugasan rinci, rilis R1–R4 serta upgrade aman. Kalender/libur bukan prasyarat input. Transaksi per item berlaku pada operasi massal; transaksi seluruh daftar berlaku pada kirim presensi kelas, jangan dicampur.
 
 - [ ] F1.12 Implementasikan penugasan mengajar/wali/BK/bidang/unit dan delegasi dengan FK, rentang tanggal, lingkup, audit dan konflik; uji pergantian/pencabutan dan akses historis PRD §4.2.2.
 - [ ] F5.17 Implementasikan penyimpanan kelas atomik beserta `pengiriman_presensi`, token idempotensi, versi sesi/daftar/izin, validasi himpunan siswa, bukti jumlah tersimpan dan endpoint periksa hasil; bukan request per siswa dan bukan bulk item engine.
@@ -268,7 +268,7 @@ PRD modul 02/03, §4.2.2, Bab 10, §13.5 dan §14.6 adalah acuan: jurnal kegiata
 - [ ] F5.02 `surat` — UI/backend/role/test termasuk sumber nomor, arsip eksternal, revisi/pengganti dan pembatalan B0.01; upload tidak wajib.
 - [ ] F5.03 `absensi_izin` — tabel `sesi_pelajaran`, `kehadiran_siswa` dan `tindak_lanjut_presensi` sesuai PRD §12.6, sesi per jam, input guru mapel, konfirmasi wali kelas, penanganan bersama BK, rekap dan izin per rentang waktu; UI/backend/otorisasi dan tes selesai, tanpa presensi guru.
 - [ ] F5.04 `pelanggaran` — UI + backend + role + test selesai (validasi sebelum poin final).
-- [ ] F5.05 `pkl` — UI + backend + role + test selesai (**tanpa akun industri**).
+- [ ] F5.05 `pkl` — presensi lokasi siswa masuk/pulang dengan radius, jurnal harian kegiatan/hasil, bantuan guru, serta P0.01–P0.07; nilai industri tetap dari kertas oleh guru tanpa akun industri.
 - [ ] F5.06 Jurnal kegiatan guru: `jurnal_kegiatan_guru` + `rincian_jurnal_guru`, kegiatan/hasil wajib, satu jurnal per guru/hari, kelas/jam/mapel opsional; tanpa ketergantungan jadwal/presensi/kalender. Draf/kirim/koreksi dan rekap sesuai PRD modul 02.
 - [ ] F5.07 `jadwal` — UI + backend + role + test selesai (tanpa generator rumit).
 - [ ] F5.08 `bk` — UI + backend + role + test selesai (data rahasia dibatasi).
@@ -294,6 +294,30 @@ ID B0 melengkapi F5/F6/F7 dan mengikuti rilis R2–R4; bukan modul/role tambahan
 - [ ] B0.07 Lab: batal reservasi sebelum digunakan, bentrok paralel, serah-terima unit bersama, pemakaian dan penyesuaian stok melalui mutasi/pembalik immutable; uji saldo tidak minus dan pembatalan reservasi tidak mengembalikan bahan yang telah dipakai (PRD modul 13).
 - [ ] B0.08 Website: draf revisi terpisah dari versi terbit, publikasi atomik/cache setelah commit, konflik dua editor, restore versi, URL/menu stabil; uji media yang dirujuk draf/revisi/terbit tidak dapat dihapus dan kelima tema/admin tetap konsisten (PRD modul 15).
 
+## P0 — Presensi lokasi dan jurnal PKL siswa
+
+Checklist ini mengikuti rilis PKL (R3), bukan modul baru; belum membuktikan aplikasi berjalan. Gunakan alur ringkas untuk pengguna non-IT dan bedakan presensi siswa PKL dari presensi sekolah 1 guru–1 kelas.
+
+- [ ] P0.01 Koordinator mengatur lokasi/versi koordinat dan radius awal 100 meter, akurasi dan penempatan sah; siswa tidak dapat mengganti pusat/radius/penempatan atau tanggal tindakan. Uji revisi lokasi tidak mengubah bukti lama.
+- [ ] P0.02 Halaman PKL Saya mengutamakan Absen Masuk, Absen Pulang dan Isi Jurnal; ambil lokasi setelah tindakan/izin pengguna, tanpa pemantauan terus-menerus, foto wajib, API peta berbayar atau akun industri.
+- [ ] P0.03 Implementasikan token 60 detik, lokasi baru/akurasi valid, jarak Haversine di server dan syarat `jarak + akurasi <= radius`; HTTPS dan Geolocation API. Uji luar radius, akurasi buruk, koordinat invalid, token lama, client memalsukan jarak, serta pesan Indonesia yang menjelaskan langkah berikutnya.
+- [ ] P0.04 Simpan masuk/pulang secara transaksional dan idempotent, satu header per siswa/penempatan/hari, satu event efektif per jenis; uji dua tab, double-tap, timeout setelah commit, tanggal server Jakarta dan pulang lewat tengah malam pada hari kerja masuk yang sama.
+- [ ] P0.05 Bantuan lokasi/terlewat diperiksa guru berizin tanpa bypass siswa; sumber koreksi verifikasi_petugas, alasan dan versi event tersimpan. Uji sakit/izin tidak membuat koordinat/hadir palsu, penempatan lain ditolak dan modul nonaktif tidak merusak record terbuka.
+- [ ] P0.06 Jurnal PKL harian berisi kegiatan dan hasil, draf/kirim/periksa/perbaiki; tidak memerlukan GPS/presensi sukses. Uji tanggal/segmen, privasi siswa lain, koreksi jurnal diperiksa membentuk versi baru dan histori penempatan tetap.
+- [ ] P0.07 Uji hak lihat koordinat/ringkasan/ekspor dan kebijakan retensi manual; owner/publik/role salah tidak mendapat lokasi rinci. Tidak menyimpan lokasi kontinu, localStorage atau log umum; bukti Core read-only tetap milik pengguna berhak.
+
+## M0 — Penyesuaian kebutuhan SMK dan kemudahan penggunaan
+
+Ini penajaman modul yang ada, bukan tambahan role/modul; presensi sekolah tetap 1 guru–1 kelas tanpa pembagian kelompok.
+
+- [ ] M0.01 Master konsentrasi opsional serta penugasan kepala program/konsentrasi memakai role Pimpinan yang ada; uji lingkup, program induk, snapshot nama dan histori perpindahan.
+- [ ] M0.02 Daftar kelas membedakan sasaran sekolah dan konteks Sedang PKL tanpa mengubah rombel. Uji Semua Hadir tidak mengisi peserta PKL, snapshot/pengecualian sah dan satu transaksi kelas tetap lengkap; konteks dasar dapat dicatat di Core tanpa membuka fitur PKL berbayar.
+- [ ] M0.03 Jadwal dan Lab memakai master/pemakaian ruang bersama; uji bentrok lintas modul/paralel, taut kegiatan sama dan pemakaian sah tidak hilang saat modul nonaktif.
+- [ ] M0.04 Stok bahan per lokasi, hak unit dan transfer keluar/masuk atomik; uji stok kurang, gagal satu sisi, transfer ulang dan pasangan pembalik tanpa saldo minus.
+- [ ] M0.05 BKK mencatat penyerahan kandidat ke PIC berikut berkas/kanal/waktu dan sumber persetujuan tujuan lamaran; uji ekspor data minimum, versi kirim ulang dan Terkirim tidak berarti Diterima kerja. Tanpa kirim otomatis/akun industri.
+- [ ] M0.06 Tracer memakai snapshot sasaran periode, termasuk alumni belum berakun; uji penyebut cakupan, status jangkauan, sasaran nol, revisi daftar dan jawaban efektif tanpa duplikasi.
+- [ ] M0.07 UAT pengguna non-IT sesuai PRD §3.4: setup bertahap, template impor, isian minimum, mobile, tombol jelas, pesan solusi dan status simpan nyata; jurnal guru dan siswa cukup kegiatan/hasil, lokasi hanya presensi PKL.
+
 ## F6 — Integrasi data lintas modul
 
 **Dependensi:** modul terkait ada. Jika salah satunya tidak aktif, modul yang lain tetap berfungsi.
@@ -309,7 +333,7 @@ ID B0 melengkapi F5/F6/F7 dan mengikuti rilis R2–R4; bukan modul/role tambahan
 
 **Selesai jika:** menonaktifkan modul pasangan tidak menimbulkan error pada modul yang masih aktif.
 
-**Skenario penerimaan terbaru:** OP01–OP13 pada PRD §14.7 dan AU01–AU21 pada §14.8 wajib diuji sesuai rilis. Prototipe tema bukan bukti CMS produksi selesai.
+**Skenario penerimaan terbaru:** OP01–OP13 pada PRD §14.7, AU01–AU21 pada §14.8 dan SM01–SM11 pada §14.9 wajib diuji sesuai rilis. Prototipe tema bukan bukti CMS produksi selesai.
 
 ## F7 — QA, keamanan, performa dan aksesibilitas
 
@@ -713,7 +737,7 @@ Gerbang modul/integrasi diuji sesuai paket rilis Bab 10 dan regresi modul terdah
 
 **Pemeriksaan integrasi kritis:**
 
-- [ ] C01 PKL: nilai industri dari lembar kertas diinput guru; tidak perlu akun industri; bukti file opsional.
+- [ ] C01 PKL: siswa login untuk absen lokasi berbatas jarak dan jurnal kegiatan/hasil; nilai industri dari kertas tetap diinput guru, tanpa akun industri dan tanpa foto wajib.
 - [ ] C02 Guru menyimpan semua siswa per sesi hari ini secara atomik; S/I langsung dari wali kelas, konfirmasi tanpa tenggat dan alur penanganan BK; izin siswa/guru dalam satu modul, tanpa presensi guru.
 - [ ] C03 Surat bisa dicatat/disimpan tanpa file dan tetap bisa dibuat/upload dokumen bila dibutuhkan.
 - [ ] C04 Sarpras dan Lab memakai `aset.id` sama; stok bahan pakai tidak negatif; peminjaman unit tidak ganda.
@@ -843,3 +867,12 @@ Checklist berikut melengkapi tugas F/K terkait; belum dicentang karena merupakan
 - Review silang menutup konflik arsip versus lisensi, cakupan R1–R4, sumber prefill izin versus observasi guru, privasi rekonsiliasi identitas, invariant pengembalian uang dan koreksi tracer setelah periode ditutup.
 - Validasi dokumen: 18 bab, 15 modul, 13 role, 172 ID task bertitik unik; OP01–OP13 dan AU01–AU21 tersedia, pemetaan modul/rilis dan tautan lokal valid. Struktur tabel konsisten dan `git diff --check` bersih.
 - Perubahan pada revisi ini hanya `PRD.md` dan `TASK.md`. Tidak ada perubahan pada prototipe HTML atau implementasi Laravel; tidak ada task aplikasi yang dicentang lulus. Skenario penerimaan masih harus dieksekusi pada aplikasi nyata sesuai cakupan rilis.
+
+## Bukti revisi kebutuhan SMK PRD 4.9
+
+- Presensi sekolah tetap 1 guru–1 kelas tanpa pembagian kelompok. PKL siswa ditambah Absen Masuk/Pulang berbasis lokasi saat tindakan, radius dan bantuan guru, serta jurnal kegiatan/hasil yang tidak bergantung GPS.
+- Program/konsentrasi dan kepala program memakai penugasan yang ada; ruang Jadwal–Lab, stok per lokasi, penyerahan kandidat BKK dan sasaran tracer dirinci. Kriteria penggunaan non-IT berada di PRD §3.4 dan SM01–SM11.
+- Desain mandiri `prototype/15-pkl-siswa.html` dapat dibuka melalui indeks dan halaman PKL. Hanya data contoh dalam memori halaman; tidak ada login/backend atau kiriman pesan/lokasi ke sekolah pada prototipe.
+- Pengujian aktual prototipe dengan Playwright/Chromium dan lokasi sintetis: 14 skenario lulus, mencakup masuk/pulang sah, penolakan luar/dekat batas area, akurasi buruk, lokasi ditolak/tidak tersedia/timeout/kedaluwarsa/invalid, jurnal tanpa lokasi, serta tampilan dan bantuan pada lebar 320/390/1440px. Tidak meminta lokasi nyata saat uji.
+- Validasi dokumen: 186 ID task bertitik unik, 13 role, 15 modul, rilis R1–R4, OP01–OP13/AU01–AU21/SM01–SM11 serta tautan lokal konsisten. Seluruh 21 HTML hanya memakai file HTML pada folder prototype; 34 blok JavaScript valid secara sintaks.
+- Ini bukti desain/dokumen dan simulasi browser; transaksi MariaDB, login, radius server, pergantian lisensi dan penyimpanan lokasi nyata belum diimplementasikan. Task aplikasi tetap tidak dicentang; UAT pengguna non-IT nyata tetap wajib setelah aplikasi tersedia.
