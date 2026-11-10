@@ -6,7 +6,7 @@
 > Gunakan checkout yang sudah ada; setiap tugas cloud sudah terisolasi dan tidak memerlukan Git worktree baru.
 
 
-**Versi:** 1.7 (App-Only, selaras PRD 4.9) · **Status:** Belum dimulai (semua kotak tugas masih kosong)
+**Versi:** 1.8 (App-Only, selaras PRD 4.9; audit prototipe) · **Status:** Belum dimulai (semua kotak tugas aplikasi masih kosong)
 **Acuan utama:** [`PRD.md`](PRD.md)  
 **Instruksi coding:** bagian Panduan implementasi dalam dokumen ini  
 **Referensi UI:** [`prototype/index.html`](prototype/index.html) dan prototipe HTML lainnya.
@@ -495,7 +495,7 @@ Jika ada kontradiksi, utamakan PRD; beri catatan konflik pada laporan progres. J
 ## Panduan implementasi
 
 
-**Versi:** 1.1 · **Acuan:** `PRD.md` · **Checklist:** `TASK.md` · **Prototype UI:** `prototype/index.html` dan halaman `01-owner.html` s.d. `14-modul-lain.html`
+**Versi:** 1.1 · **Acuan:** `PRD.md` · **Checklist:** `TASK.md` · **Prototype UI:** `prototype/index.html`, halaman `01-owner.html` s.d. `16-jurnal-guru.html`, dan lima tema publik
 
 > **Cara pakai:** salin bagian **PROMPT UTAMA** ke asisten coding yang bekerja di repository Laravel. Sertakan file PRD, `TASK.md`, dan folder HTML prototipe sebagai referensi. Kerjakan task berdasarkan dependensinya, dan centang hanya setelah pengujian lulus. Implementasikan **bertahap**, mulai dari fondasi; jangan langsung menganggap contoh HTML sebagai aplikasi produksi.
 
@@ -876,3 +876,15 @@ Checklist berikut melengkapi tugas F/K terkait; belum dicentang karena merupakan
 - Pengujian aktual prototipe dengan Playwright/Chromium dan lokasi sintetis: 14 skenario lulus, mencakup masuk/pulang sah, penolakan luar/dekat batas area, akurasi buruk, lokasi ditolak/tidak tersedia/timeout/kedaluwarsa/invalid, jurnal tanpa lokasi, serta tampilan dan bantuan pada lebar 320/390/1440px. Tidak meminta lokasi nyata saat uji.
 - Validasi dokumen: 186 ID task bertitik unik, 13 role, 15 modul, rilis R1–R4, OP01–OP13/AU01–AU21/SM01–SM11 serta tautan lokal konsisten. Seluruh 21 HTML hanya memakai file HTML pada folder prototype; 34 blok JavaScript valid secara sintaks.
 - Ini bukti desain/dokumen dan simulasi browser; transaksi MariaDB, login, radius server, pergantian lisensi dan penyimpanan lokasi nyata belum diimplementasikan. Task aplikasi tetap tidak dicentang; UAT pengguna non-IT nyata tetap wajib setelah aplikasi tersedia.
+
+## Bukti pembaruan prototipe sesuai PRD 4.9 — 10 November 2026
+
+- Presensi sekolah menjadi satu guru–satu kelas per jam dengan tanggal hari ini, satu penyimpanan seluruh kelas, bukti lengkap, contoh gagal/koneksi putus/konflik data, izin S/I wali langsung, pembatalan tanpa otomatis H, pengecualian siswa PKL, serta konfirmasi wali tanpa tenggat. Tampilan ponsel memakai kartu siswa dengan pilihan H/S/I/A satu baris.
+- `16-jurnal-guru.html` menampilkan kegiatan dan hasil harian, beberapa kegiatan, kelas/mapel opsional, draf, kirim, tinjauan dan revisi yang mempertahankan isi versi sebelumnya. Tidak bergantung jadwal/presensi/kalender.
+- Kenaikan mengikuti pengecualian yang dipilih; kelulusan mencontohkan tingkat akhir XII/XIII; filter/tambah/pindah siswa menampilkan perubahan dan riwayat contoh. Verifikasi alumni mempertahankan status keputusan. Nilai industri PKL menyimpan versi dan alasan revisi; radius menampilkan batas akurasi sesuai PRD.
+- Keuangan memperlihatkan penyesuaian, void administratif, pengembalian manual, pembatalan setelah penerimaan nol, dan pembalik yang memulihkan tagihan bersama penyesuaiannya. Surat membedakan nomor internal/eksternal, final/revisi/batal. Sarpras memperlihatkan pengembalian sebagian/rusak, stok per lokasi dan bentrok ruang. Pelanggaran memakai bobot saat kejadian dan versi koreksi, tanpa pilihan prestasi.
+- CMS menyediakan lima pilihan tema, draf yang tidak menimpa versi publik, serta perpindahan/visibilitas submenu mengikuti induk. Seluruh HTML dirapikan; tema diperbaiki pada lebar 320px. Katalog modul lain memberi detail alur sesuai PRD dan batas rilis R1–R4 tetap dijelaskan.
+- Kode modul demo memakai `jurnal_guru`, `absensi_izin` dan `sarpras` dengan migrasi pilihan lama. Mode tinjau desain dibedakan dari simulasi akses sekolah; modul nonaktif/lisensi berakhir tidak menghapus data contoh atau merusak layanan inti. Lab dapat aktif sendiri, layanan alumni bersama mengikuti BKK atau Tracer. Proses tertunda tidak menampilkan sukses setelah akses dicabut.
+- Validasi aktual: 22 HTML, 40 blok JavaScript lulus pemeriksaan sintaks, tautan lokal tersedia, dan hanya HTML berada di folder `prototype/`. Dua dokumen Markdown tetap `PRD.md` dan `TASK.md`; 186 ID tugas unik dan tidak ada task aplikasi dicentang selesai.
+- Chromium/Playwright: 18 kelompok pengujian utama lulus, termasuk seluruh 22 halaman pada 320/390/1440px, navigasi ponsel, ID elemen unik, tanpa overflow halaman atau galat JavaScript, dan alur transaksi simulasi di atas. Lima pemeriksaan tambahan lulus untuk penghentian/kelanjutan batch, struktur submenu, fokus modal dan pembatalan absen PKL tertunda. Empat belas skenario lokasi/jurnal/bantuan PKL sebelumnya diuji ulang dan lulus memakai lokasi sintetis. Nilai PKL berversi, radius/akurasi, kelulusan XII/XIII dan tombol presensi ponsel juga diperiksa; tangkapan layar presensi, jurnal guru dan CMS ditinjau.
+- **Batas bukti:** status proses dan arsip pada desain adalah simulasi browser, sebagian hanya selama halaman terbuka. Mode akses bukan autentikasi atau kontrol lisensi server. Belum membuktikan transaksi atomik MariaDB, keamanan role, persistensi, deployment atau kesiapan produksi. Peta HTML representatif ada pada PRD; layar yang belum dibuat tetap mengikuti task aplikasi sesuai rilis.

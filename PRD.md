@@ -2189,22 +2189,27 @@ HTML berikut adalah **simulasi frontend**, bukan aplikasi production. Data dan s
 | `01-owner.html` | Owner lokal, aktivasi modul, masa lisensi |
 | `02-dashboard.html` | Dashboard sekolah berdasarkan modul aktif |
 | `03-siswa.html` | Data induk siswa, pencarian |
-| `04-kenaikan.html` | Pilih massal, konfirmasi, progress |
-| `05-kelulusan.html` | Penetapan lulus, status alumni |
+| `04-kenaikan.html` | Pengecualian siswa ditunda, pratinjau dan hasil massal sesuai pilihan |
+| `05-kelulusan.html` | Keputusan eksplisit tingkat akhir XII/XIII, pengecualian XII program empat tahun |
 | `06-alumni.html` | Pendaftaran alumni lama, verifikasi, riwayat |
-| `07-pkl.html` | Jurnal dan input nilai pembimbing industri melalui guru |
-| `08-absensi.html` | Absensi siswa dan izin siswa/guru |
-| `09-keuangan.html` | Tagihan, pembayaran, tunggakan |
-| `10-surat.html` | Surat dengan atau tanpa lampiran |
-| `11-sarpras.html` | Aset bersama Sarpras/Lab |
-| `12-website.html` | CMS dan menu dinamis |
-| `13-pelanggaran.html` | Poin kedisiplinan dan validasi |
+| `07-pkl.html` | Pemeriksaan jurnal, nilai kertas oleh guru, versi radius dan panduan bantuan GPS |
+| `08-absensi.html` | Presensi per jam hari ini, seluruh kelas, izin S/I wali langsung, pengecualian PKL, bukti simpan dan konfirmasi wali |
+| `09-keuangan.html` | Pembayaran, penyesuaian, void administratif, pengembalian manual, pembatalan dan pembalik dengan riwayat |
+| `10-surat.html` | Surat internal/arsip eksternal, draf, nomor final, revisi dan pembatalan |
+| `11-sarpras.html` | Pengembalian unit sebagian/rusak, mutasi bahan per lokasi dan pemeriksaan bentrok ruang |
+| `12-website.html` | Pilihan lima tema, draf versus versi terbit, menu/submenu yang mengikuti induk |
+| `13-pelanggaran.html` | Bobot saat kejadian, validasi/koreksi berversi dan pembinaan tanpa sanksi otomatis |
 | `14-modul-lain.html` | Ringkasan modul lain |
 | `15-pkl-siswa.html` | Portal siswa: lokasi saat absen masuk/pulang, batas jarak, bantuan dan jurnal PKL (simulasi) |
+| `16-jurnal-guru.html` | Kegiatan/hasil harian tanpa jadwal wajib, beberapa kegiatan, draf, kirim, tinjauan pimpinan dan revisi |
 | `tema-01-klasik.html` | Tema publik Sekolah Klasik |
 | `tema-02-modern.html` | Tema publik Modern Minimalis |
 | `tema-03-vokasi.html` | Tema publik Vokasi Industri |
 | `tema-04-berita.html` | Tema publik Portal Informasi |
 | `tema-05-kreatif.html` | Tema publik Kreatif Dinamis |
+
+**Cara meninjau:** mode awal **Tinjau semua desain** membuka contoh tanpa mengikuti lisensi. Pilih **Simulasi akses modul sekolah** untuk mengikuti pengaturan modul/lisensi contoh dari halaman Owner. Pilihan demo memakai penyimpanan browser pada asal yang sama; membuka file HTML langsung dapat membatasi berbagi pengaturan antarhalaman, tergantung browser. Layanan inti tetap tersedia; modul nonaktif menampilkan penjelasan dan contoh arsip hanya baca. Lab dapat ditinjau saat hanya Lab aktif; layanan alumni bersama mengikuti BKK atau Tracer. Ini simulasi tampilan, bukan implementasi otorisasi server.
+
+**Batas cakupan desain:** 22 HTML merupakan contoh alur representatif, termasuk lima tema publik. Katalog modul lain menjelaskan alur yang belum mempunyai layar operasional lengkap. HTML belum mencakup semua layar, persetujuan, ekspor atau kasus tepi pada PRD; aturan produk dan gerbang rilis tetap berlaku saat implementasi.
 
 **Catatan:** prototipe HTML bukan pengganti Blade/Livewire, database, autentikasi, permission, atau unit test.

@@ -510,6 +510,16 @@
       </div>
     </header>
     <main class="wrap">
+      <section class="notice">
+        <label for="pkl-review-mode">Mode prototipe</label>
+        <select id="pkl-review-mode">
+          <option value="review">Tinjau semua desain</option>
+          <option value="user">Simulasi akses modul sekolah</option>
+        </select>
+        <p class="small muted" id="pkl-module-state">
+          Pilihan modul diatur pada halaman Owner.
+        </p>
+      </section>
       <div class="welcome">
         <div>
           <p class="eyebrow">Portal siswa</p>
@@ -788,6 +798,18 @@
         );
       }
       function updateButtons() {
+        if (!pklModuleAllowed()) {
+          [
+            "#check-in",
+            "#check-out",
+            "#retry-location",
+            "#cancel-location",
+            "#save-attendance",
+            "#journal-open",
+            "#help-open",
+          ].forEach((id) => ($(id).disabled = true));
+          return;
+        }
         const busy = locating || saving;
         $("#location-panel").classList.toggle("busy", busy);
         $("#check-in").disabled = entered || busy;
@@ -812,7 +834,7 @@
         updateButtons();
       }
       function locate(kind) {
-        if (saving || locating) return;
+        if (!pklModuleAllowed() || saving || locating) return;
         if (kind === "masuk" && entered) return;
         if (kind === "pulang" && (!entered || finished)) return;
         action = kind;
@@ -933,7 +955,7 @@
       $("#retry-location").onclick = () => locate(action);
       $("#cancel-location").onclick = resetLocation;
       $("#save-attendance").onclick = () => {
-        if (!sample || saving) return;
+        if (!pklModuleAllowed() || !sample || saving) return;
         if (Date.now() - sample.captured > 60000) {
           sample = null;
           $("#save-attendance").hidden = true;
@@ -951,9 +973,15 @@
         )
           return;
         saving = true;
+        const saveSequence = requestSequence;
         updateButtons();
         $("#save-attendance").textContent = "Mencatat contoh…";
         setTimeout(() => {
+          if (!pklModuleAllowed() || saveSequence !== requestSequence) {
+            saving = false;
+            resetLocation();
+            return;
+          }
           const time = timeText.format(new Date());
           if (kind === "masuk") {
             entered = true;
@@ -1048,6 +1076,63 @@
           "Permintaan bantuan contoh dicatat. Guru belum menerima pesan; pada aplikasi sebenarnya permintaan akan masuk ke guru pembimbing.",
         );
       };
+
+      function pklDemoSetting(key, fallback) {
+        try {
+          const raw = localStorage.getItem("smkprd-demo-" + key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (e) {
+          return fallback;
+        }
+      }
+      function pklModuleAllowed() {
+        return (
+          pklDemoSetting("accessMode", "review") === "review" ||
+          (!pklDemoSetting("licenseExpired", false) &&
+            pklDemoSetting("activeModules", ["surat", "website"]).includes(
+              "pkl",
+            ))
+        );
+      }
+      function applyPklModule() {
+        $("#pkl-review-mode").value = pklDemoSetting("accessMode", "review");
+        const allowed = pklModuleAllowed();
+        $("#pkl-module-state").textContent = allowed
+          ? "Tinjau desain dengan data contoh. Tidak ada login atau validasi lisensi server."
+          : "Modul PKL nonaktif atau lisensi berakhir. Tidak ada pencatatan baru. Riwayat tetap dapat dibaca sesuai hak akses; hubungi admin sekolah.";
+        if (!allowed) {
+          requestSequence++;
+          sample = null;
+          locating = false;
+          $("#location-panel").hidden = true;
+          document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+        }
+        $("#journal-open").disabled = !allowed;
+        $("#help-open").disabled = !allowed;
+        updateButtons();
+      }
+      $("#pkl-review-mode").onchange = (e) => {
+        try {
+          localStorage.setItem(
+            "smkprd-demo-accessMode",
+            JSON.stringify(e.target.value),
+          );
+        } catch (error) {}
+        applyPklModule();
+      };
+      window.addEventListener("storage", applyPklModule);
+      document.addEventListener(
+        "submit",
+        (e) => {
+          if (!pklModuleAllowed()) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            applyPklModule();
+          }
+        },
+        true,
+      );
+      applyPklModule();
     </script>
   </body>
 </html>
