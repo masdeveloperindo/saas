@@ -6,7 +6,7 @@
 > Gunakan checkout yang sudah ada; setiap tugas cloud sudah terisolasi dan tidak memerlukan Git worktree baru.
 
 
-**Versi:** 2.0 (App-Only, selaras PRD 4.11; inventaris teknis lengkap) · **Status:** Belum dimulai (semua kotak tugas aplikasi masih kosong)
+**Versi:** 2.1 (App-Only, selaras PRD 4.12; pembuktian R1 bertahap) · **Status:** Belum dimulai (semua kotak tugas aplikasi masih kosong)
 **Acuan utama:** [`PRD.md`](PRD.md)  
 **Instruksi coding:** bagian Panduan implementasi dalam dokumen ini  
 **Referensi UI:** [`prototype/index.html`](prototype/index.html) dan prototipe HTML lainnya.
@@ -17,7 +17,7 @@
 
 ## Cara menggunakan checklist
 
-1. Ikuti **Urutan pelaksanaan per lapisan** di bawah: peta route/file → kontrak skema → migration → model → keamanan/lisensi → UI bersama → Core → gerbang fondasi → fitur rilis → QA/handover. ID F/K adalah kelompok tugas, bukan urutan eksekusi seluruh kelompok.
+1. Ikuti **Urutan pelaksanaan per lapisan** di bawah: peta route/file → skema/model minimum → keamanan/lisensi → UI/data kelas minimum → gerbang fondasi minimum → buktikan alur harian → lengkapi seluruh Core dan fitur R1 → QA/handover. ID F/K adalah kelompok tugas, bukan urutan eksekusi seluruh kelompok.
 2. Tandai `[x]` **hanya** jika implementasi sudah ada, diuji, dan kriteria selesai terpenuhi. Tambahkan referensi commit/PR atau bukti pengujian pada laporan kemajuan.
 3. Setiap modul yang sudah dibangun harus lulus tes izin pengguna, validasi input, aktivasi lisensi, dan integritas data.
 4. Ikuti PRD bila ada perbedaan antara PRD dan HTML (HTML hanya contoh). Jangan memperluas MVP tanpa kebutuhan pengguna.
@@ -39,55 +39,73 @@
 
 ## Urutan pelaksanaan per lapisan
 
-**Alur utama:** Peta Route/File → Kontrak Database → Seluruh Migration Fondasi Rilis → Seluruh Model Fondasi Rilis → Keamanan/Lisensi → UI Bersama → Alur Core → Gerbang Fondasi → Fitur Rilis sampai Tuntas → QA/UAT/Upgrade → Handover.
+**Alur utama:** Peta Route/File dan Data → Migration Minimum → Model → Keamanan/Lisensi → UI/Data Kelas Minimum → Gerbang Fondasi Minimum → Buktikan Alur Harian → Lengkapi Seluruh Core dan Fitur R1 → QA/UAT/Upgrade → Handover.
 
-Peta mencakup Core dan seluruh 15 modul sejak awal. Yang diimplementasikan terlebih dahulu adalah fondasi **R1**, bukan seluruh fitur R2–R4. Setiap rilis berikutnya mengulang lapisan untuk tambahannya dan menguji regresi source yang sudah terpasang, termasuk modul nonaktif. F/K/C0/B0/P0/M0/A0 adalah ID pekerjaan tetap; satu kelompok dapat dikerjakan pada beberapa lapisan. **Tabel ini menggantikan urutan fase lama di seluruh panduan dalam dokumen ini.**
+Ini satu urutan kanonik; bab panduan/prompt cukup merujuk ke sini. Peta mencakup Core dan 15 modul, sedangkan source dibuat sesuai tahap dan rilis. ID F/K/C0/B0/P0/M0/A0 adalah kelompok pekerjaan stabil, bukan instruksi menuntaskan satu kelompok sebelum memulai kelompok lain. Satu ID yang baru dikerjakan sebagian tetap kosong dengan catatan subcakupan/bukti. **Cakupan produksi R1 pada PRD Bab 10 tidak diperkecil oleh urutan ini.**
 
 | Langkah | Pekerjaan dan ID acuan | Prasyarat | Hasil yang harus dapat diperiksa |
 |---|---|---|---|
-| 1. Scaffold dan peta route/file | F0.01–F0.03, K0.07, C0.05 | PRD dan cakupan R1–R4 | Laravel bisa boot; peta seluruh URL/named route/metode/handler/middleware/menu/rilis/file/test tercatat. Route bisnis belum dibuka jika handler belum tersedia. |
-| 2. Kontrak skema | K1.08, bagian desain K1.02/K1.03/K1.06/K1.07 | Langkah 1 | Daftar tabel/kolom/FK/UNIQUE/indeks/status/retensi, pemilik master bersama dan urutan migration rilis; tidak ada FK ke tabel yang belum dikirim. |
-| 3. Migration dan seed fondasi | Bagian skema F1.01–F1.03/F1.11/F1.12, F2.09, F4.01, C0.01, F0.09; skema R1 F5.03/F5.06/F5.16/F5.17 | Langkah 2 | Semua tabel fondasi Core + Presensi/Izin + Jurnal R1 terpasang berurutan; seed peran/hak/katalog aman, tanpa owner default atau aktivasi lisensi diam-diam. Ini baru penyelesaian skema, belum mencentang tugas fitur F5. |
-| 4. Model dan relasi fondasi | K1.09, bagian relasi K1.07, F1.05/F1.12/F2.09 | Langkah 3 | Seluruh model fondasi rilis punya tabel, casts, relasi dan query lingkup yang diuji; tidak ada model kosong atau query ke tabel rilis mendatang. Aturan transaksi fitur dilengkapi ketika aksi fiturnya dibangun. |
-| 5. Autentikasi, hak akses dan lisensi | F0.04/F0.09, F1.05/F1.06, K0.03, K2.01–K2.09, F3.03/F3.05–F3.08, C0.02–C0.04 sesuai R1 | Langkah 4 | Login/reset/logout/MFA, akun aktif, peran/tindakan/lingkup, lisensi dan arsip terotorisasi; bootstrap tidak memerlukan owner yang sudah login atau data sekolah yang belum dibuat. |
-| 6. Antarmuka bersama dan routing nyata | F0.05–F0.08/F0.11, K0.01/K0.02/K0.04/K0.05/K0.06 | Langkah 5 | Layout, komponen, Bahasa Indonesia dan menu berbasis hak; daftarkan route hanya bersama handler/view nyata. `route:list`/`route:cache` dan tes tamu/role salah lulus. |
-| 7. Alur Core dan panel owner | F1 CRUD/akun/penugasan; F3.01/F3.02/F3.04; F4.02–F4.12 → F1.07 → bagian R1 F2; F6 terkait Core | Langkah 6; impor dan akademik massal menunggu F4 | Data induk, tahun/kelas, impor, perpindahan/kenaikan/kelulusan, profil alumni Core, audit, pembayaran langganan owner serta proses massal bekerja sampai DB; regresi dan bukti hasil nyata. |
-| 8. Gerbang fondasi | K2.10 | Langkah 1–7 dan tesnya lulus | Fondasi R1 terverifikasi; belum ada klaim modul operasional atau produksi. Blocker fondasi diperbaiki sebelum implementasi operasional modul. |
-| 9. Fitur rilis sampai tuntas | R1: F5.03/F5.16/F5.17 lalu F5.06; F6, A0/M0 yang relevan. R2–R4: matriks cakupan di bawah | Gerbang fondasi rilis target; kontrak spesifik fitur ditetapkan | Aksi server, transaksi bisnis, Livewire/Blade, bukti/arsip, laporan yang diperlukan dan tes setiap fitur selesai. QA dilakukan pada setiap perubahan. |
-| 10. Kelayakan produksi dan handover | F7 → F8/F9, K3, C0.06 dan checklist rilis yang berlaku | Fitur rilis lulus; lingkungan dari operator tersedia | Uji integrasi/concurrency/keamanan/upgrade/pemulihan, build/cache dan UAT nyata; keputusan rilis berdasarkan bukti dan cakupan yang dinyatakan. |
+| 1. Scaffold dan peta | F0.01–F0.03, rancangan K0.07, C0.05 | PRD dan status repository | Laravel boot tanpa menghapus dokumen/prototipe; peta URL/menu/rilis, pemilik data dan file awal. K0.07 belum selesai sampai route target nyata dan diuji; tidak membuat handler kosong. |
+| 2. Tinjau skema tahap awal | Bagian K1.08/K1.02/K1.03/K1.06/K1.07 | Langkah 1 | Pilih tabel minimum identitas, penugasan, kelas/roster, konteks PKL Core, hak/lisensi, audit dan kebutuhan alur harian; tinjau FK/UNIQUE/status terhadap PRD. R2–R4 tetap rencana. |
+| 3. Migration dan seed minimum | Bagian F1.01–F1.03/F1.12, C0.01, F0.09; K1.08 | Langkah 2 | Skema tahap awal terpasang induk dahulu, seed hak/katalog aman; tidak menunggu skema rekonsiliasi, impor/massal atau seluruh modul masa depan. Tidak ada owner/password default atau lisensi aktif diam-diam. |
+| 4. Model dan relasi minimum | Bagian K1.09/K1.07, F1.05/F1.12 | Langkah 3 | Tabel/casts/relasi/query lingkup identitas dan roster nyata diuji pada MariaDB. Model hanya dibuat bila dipakai; seluruh fitur/tugas belum otomatis selesai. |
+| 5. Auth, hak, lisensi dan arsip | F0.04/F0.09, bagian F1.05/F1.06, K0.03, K2.01–K2.09, F3.03/F3.05–F3.08, C0.02–C0.04 sesuai tahap | Langkah 4 | Provisioning aman, login/reset/logout/MFA, akun aktif, rangkap peran/penugasan efektif, lisensi dan pembaca arsip/bukti Core aman. Mekanisme yang belum punya transaksi diuji dengan fixture test. |
+| 6. UI dan administrasi minimum | F0.05–F0.08/F0.11, K0.01/K0.02/K0.04–K0.07; bagian F1.04/F1.06/F1.08 dan penugasan; bagian F3.01/F3.02/F3.04 | Langkah 5 | UI Indonesia dan menu berizin, profil/tahun/program/mapel/kelas, guru/siswa/penempatan serta akun/penugasan minimum dapat diinput lewat UI; tidak perlu impor untuk mencoba satu kelas. Panel owner mendukung pengujian lisensi aman; administrasi langganan lengkap mengikuti langkah 9. |
+| 7. Gerbang fondasi minimum | K2.10 | Langkah 1–6 beserta tes minimum | Boot, akses/lingkup, skema/roster, lisensi/arsip dan UI minimum lulus. Impor, mesin massal lengkap, kelulusan dan seluruh Core bukan prasyarat gerbang ini; tetap wajib langkah 9. |
+| 8. Pembuktian alur harian | Bagian F5.03/F5.16/F5.17 lalu F5.06; F6 dan A0/M0 sesuai alur | Langkah 7; lengkapi migration/model izin/wali/sesi/presensi/jurnal sebelum aksinya | Guru simpan seluruh kelas hari ini → bukti commit → wali input S/I → prefill guru → konfirmasi wali; jurnal kegiatan/hasil diuji mandiri. Tes kegagalan pada tabel di bawah lulus; catat hasil atau jadwal uji pengguna awal. Tinjau desain sebelum memperluas pekerjaan. Bukan klaim seluruh modul selesai. |
+| 9. Lengkapi seluruh R1 | Sisa F1 CRUD/akun/penugasan/rekonsiliasi/ekspor, F3 owner/langganan; F4 → F1.07 → bagian R1 F2; seluruh F5.03/F5.16/F5.17/F5.06, F6 serta K/C0/A0/M0/B0 yang berlaku | Langkah 8 dan tindak lanjut review; migration/model tambahan mendahului aksinya | Semua Core dan fitur R1 Bab 10 selesai, termasuk impor, pindah/naik kelas, kelulusan/profil alumni Core, konteks PKL minimum, izin guru, tindak lanjut dan laporan. Uji 600 siswa, retry/dua browser dan regresi alur harian; tidak ada pengurangan scope demi pilot. |
+| 10. Gerbang produksi/handover | F7 → F8/F9, K3, C0.06 dan seluruh gerbang R1 yang berlaku | Langkah 9 lengkap; runtime operator tersedia | Integrasi/concurrency/keamanan, build/cache, upgrade/pemulihan dan UAT sekolah terbukti. Putusan R1 berdasarkan seluruh cakupan dan bukti, bukan hanya demo harian. |
 
-**Dependensi yang tidak boleh dibalik:** migration identitas sebelum model/auth; kontrol lisensi sebelum menu/route operasional; F4 sebelum impor/kenaikan massal; kelulusan Core sebelum portal alumni R3; tabel induk sebelum FK anak; rilis source/skema sebelum aktivasi owner. Model/fixture Keuangan F2.14 boleh diuji lebih awal bila sudah dipasang, tetapi tidak memblokir R1 dan tidak membuka UI Keuangan.
+**Dependensi tetap:** schema identitas → Model → auth; hak/lisensi → menu/route operasional; tabel induk → FK anak; migration/model fitur → aksi fitur; F4 → impor F1.07/akademik massal; kelulusan Core → portal alumni R3; source/skema siap → aktivasi owner. F2.14 tidak memblokir R1 bila skema Keuangan belum dipasang. Semua fitur yang sudah dikirim diregresi meski lisensinya nonaktif.
 
-### Gerbang fondasi sebelum fitur modul
+Untuk R2–R4, pilih cakupan PRD Bab 10, tinjau ulang rancangan inventaris, ulangi lapisan untuk tambahan yang dibutuhkan, lalu selesaikan setiap alur dan gerbang rilisnya. Jangan mengerjakan semua migration/model R2–R4 saat fondasi R1.
 
-K2.10 hanya selesai bila bukti berikut ada untuk rilis target. Ini gerbang aplikasi dasar, bukan izin go-live.
+### Gerbang fondasi minimum sebelum pembuktian alur harian
+
+K2.10 hanya selesai bila bukti berikut tersedia. Ini gerbang mulai implementasi alur harian, bukan izin produksi atau kelulusan seluruh Core.
 
 | Area | Bukti minimum |
 |---|---|
-| Boot dan konfigurasi | Install dari lockfile, provider autentikasi `Pengguna`, koneksi MariaDB, locale Indonesia, kunci lingkungan privat, `APP_DEBUG=false` pada uji staging; tidak bergantung worker/cron. |
-| Route dan menu | Peta cocok dengan `route:list`; nama/metode unik, handler/view tersedia, URL privat tertutup, fallback modul belum siap terkontrol; Core dan halaman `/` minimal berjalan tanpa modul aktif. |
-| Migration/model | Instalasi kosong dan upgrade salinan sintetis lulus, FK/UNIQUE/casts/relasi/lingkup terbukti; tidak ada target FK atau pembaca model yang belum tersedia. |
-| Akun dan penugasan | Provisioning owner aman, MFA wajib, kombinasi peran dan lingkup/tanggal/delegasi diuji; owner tidak memperoleh akses data sekolah otomatis. |
-| Lisensi dan arsip | Kesiapan source/skema dibedakan dari aktif lisensi; nonaktif/expiry/aktif ulang tidak mengubah data atau merusak Core; arsip/bukti/progres hanya baca dan tetap berizin. |
-| Core dan massal | CRUD, impor, ID siswa permanen, histori kelas dan XII/XIII, kelulusan/profil alumni Core; 600 siswa sintetis, dua browser, retry/putus koneksi dan progres dari commit DB lulus. |
-| UI dan privasi | Layout dan pesan Indonesia, mobile/keyboard/modal/loading, validasi server, upload opsional privat dan unduh berizin; uji CSRF/IDOR serta audit tanpa isi sensitif. |
+| Boot dan konfigurasi | Install dari lockfile, provider `Pengguna`, MariaDB, locale Indonesia, konfigurasi privat dan build awal bekerja; tidak membutuhkan worker/cron. |
+| Route dan menu | `route:list`/`route:cache` sesuai handler nyata, URL privat tertutup; Core dan `/` minimal berjalan tanpa modul aktif, fitur belum siap ditolak terkontrol. |
+| Migration/model | Instalasi kosong dan upgrade salinan sintetis untuk skema yang sudah dikirim lulus; FK/UNIQUE/casts/relasi/lingkup nyata; tidak merujuk tabel/kolom masa depan. |
+| Data kelas minimum | Profil, tahun/program/kelas/mapel, guru/siswa, penempatan historis sah, konteks PKL Core dan penugasan dapat disiapkan melalui UI admin minimum; satu kelas sintetis dapat dipilih guru yang benar tanpa impor atau kalender akademik. |
+| Akun dan penugasan | Provisioning owner/admin aman, MFA owner, akun aktif, rangkap peran/lingkup/tanggal/delegasi diuji; owner tidak memperoleh hak data sekolah otomatis. |
+| Lisensi dan arsip | Readiness source/skema terpisah dari lisensi; toggle/expiry tidak merusak Core atau menghapus data. Pembaca Core tetap menegakkan hak dan lingkup. |
+| UI dan privasi | Layout/pesan Indonesia, validasi server, mobile/keyboard/modal/loading; CSRF/IDOR dan audit tanpa isi sensitif diuji pada endpoint yang tersedia. |
 
-**Batas uji fondasi:** mekanisme lisensi/hak/arsip diuji memakai fixture sintetis dan handler uji yang hanya tersedia pada lingkungan test. Ini tidak mendaftarkan halaman bisnis dummy atau menandai modul siap pada manifest produksi. Setelah handler/transaksi fitur selesai pada langkah 9, uji kembali akses dan toggle pada endpoint fitur yang sebenarnya sebelum gerbang rilis. Dengan demikian K2.10 tidak bergantung pada fitur yang justru menunggu K2.10.
+**Batas uji fondasi:** mekanisme lisensi/hak/arsip yang belum mempunyai transaksi nyata diuji dengan fixture sintetis dan handler khusus test, bukan route bisnis dummy atau manifest produksi yang mengaku siap. Setelah aksi fitur tersedia pada langkah 8, uji lagi toggle/expiry, arsip dan akses pada endpoint sebenarnya; ulangi regresi setelah langkah 9. Dengan demikian K2.10 tidak bergantung pada fitur yang justru menunggu K2.10.
 
-<a id="inventaris-teknis"></a>
+### Bukti awal wajib sebelum memperluas pekerjaan R1
+
+| Alur/risiko | Hasil yang harus dibuktikan |
+|---|---|
+| Guru membuka kelas | Hanya kelas/penugasan sah, tanggal hari ini server Jakarta tanpa pemilih tanggal guru, roster sesuai riwayat dan pengecualian PKL; satu guru–satu kelas per sesi. |
+| Simpan seluruh kelas | Satu kiriman seluruh siswa yang wajib diabsen; jumlah/identitas/status diverifikasi server dan hasil commit dapat dibaca ulang. Default H di UI belum berarti tersimpan. |
+| Satu siswa tidak valid | Seluruh transaksi dibatalkan, tidak ada sebagian detail atau bukti sukses tersimpan; masalah ditunjukkan jelas dan formulir bisa diperbaiki. |
+| Timeout sebelum/sesudah commit | Bukti Core membedakan belum tersimpan dan sudah tersimpan; token sama/payload sama tidak menggandakan atau menimpa data. Jika respons hilang, pengguna dapat memeriksa hasil tanpa menebak dari toast. |
+| Dua tab dan perubahan bersamaan | Versi usang ditolak/ditawarkan muat ulang; izin wali yang berubah tidak tertimpa diam-diam; sumber S/I wali terpisah dari observasi guru. Pembatalan tanpa observasi kembali Belum Diisi, bukan H/A otomatis. |
+| Wali dan tindak lanjut | S/I dicatat dari WA/telepon/kertas/tatap muka tanpa akun orang tua atau approval kedua; prefill guru sesuai izin, konfirmasi wali tanpa tenggat dan klarifikasi mengikuti PRD. |
+| Jurnal guru | Kegiatan dan hasil, termasuk nonmengajar, dapat dicatat tanpa kelas/mapel/jadwal/presensi; versi/perbaikan mengikuti PRD. Menonaktifkan Absensi/Izin tidak mematikan Jurnal aktif. |
+| Hak dan lisensi | Guru lain/ID siswa kelas lain ditolak, request saat hak/lisensi berubah aman; Core dan arsip/bukti tetap sesuai hak, tidak terjadi galat aplikasi. |
+| Kejelasan untuk pengguna non-IT | Guru, wali kelas dan admin mencoba alur awal di lingkungan uji dengan data sintetis. Catat penguji, langkah, kebingungan, hasil dan perbaikan; bukan persetujuan go-live atau pengganti UAT lengkap. |
+
+Catat hasil aktual pada Catatan progres implementasi dan T10: temuan skema/relasi, query/N+1, batas transaksi, jumlah input serta kesulitan penggunaan. Perbaiki blocker sebelum langkah 9; perubahan file yang masuk akal tidak memerlukan perubahan aturan bisnis. Jika perwakilan sekolah belum tersedia, catat uji pengguna awal sebagai menunggu dan lanjutkan pekerjaan Core yang tidak bergantung pada hasilnya; jangan mengklaim UAT lulus. Impor, akademik dan Core lengkap tetap diwajibkan pada langkah 9–10 serta gerbang F8/F9/PRD Bab 18; UAT lengkap wajib sebelum produksi.
+
+<a id="inventaris-teknis"></a><a id="inventaris-teknis"></a>
 
 ## Peta file implementasi dan kepemilikan data
 
-**Baseline PRD 4.11 / TASK 2.0.** Inventaris ini menetapkan 144 tabel bisnis, 150 migration bisnis (termasuk 6 penambahan FK), 141 Model, 131 halaman privat, 59 route HTTP/transport, 240 aksi layar, 18 keluaran laporan dan 33 suite integrasi. Semua adalah **rancangan, belum implementasi dan belum hasil test lulus**. Tidak ada lagi tugas memilih arsitektur, pemilik tabel, handler atau nama test untuk cakupan yang dipetakan ini.
+**Baseline PRD 4.12 / TASK 2.1.** Inventaris usulan dari versi sebelumnya tetap tersedia: 144 tabel bisnis, 150 migration bisnis (termasuk 6 penambahan FK), 141 Model, 131 halaman privat, 59 route HTTP/transport, 240 aksi layar, 18 keluaran laporan dan 33 suite integrasi. Semua adalah **rancangan, belum implementasi dan belum hasil test lulus**. Jumlah/nama/pecahan file bukan target kelulusan. T1–T9 adalah titik awal pemetaan; cara revisinya mengikuti PRD §3.5 dan T10. Seluruh aturan bisnis, keamanan, invariant dan penerimaan tetap wajib meski beberapa file/tabel digabung atau dipecah. R2–R4 ditinjau lagi sebelum mulai dikerjakan.
 
-### T1. Keputusan implementasi yang dikunci
+### T1. Pilihan awal implementasi dan batas yang wajib dijaga
 
 - Autentikasi memakai Laravel Fortify, guard session `web`, provider Model `Pengguna`, fitur reset sandi dan TOTP owner; registrasi umum/profile update bawaan/passkey tidak diaktifkan. `Fortify::ignoreRoutes()` lalu hanya route terpilih T5 didaftarkan sekali. Tidak menulis kriptografi atau reset-token sendiri.
 - `app/Providers/AppServiceProvider.php` adalah adapter framework minimum: binding kontrak Fortify, view autentikasi, throttle, persistent middleware Livewire dan satu `Livewire::setUpdateRoute(fn($handle,$path) => ...)` pada `/livewire/update`. Pemilihan endpoint ini disengaja; jangan mengasumsikan endpoint hash default Livewire 4 tetap. Provider/route/config tidak melakukan query DB saat boot/route-cache.
 - Semua komponen Livewire adalah class-based dan privat. Endpoint update memakai web/auth/akun-aktif/header guard; setiap action yang dipetakan di T4 memeriksa lagi hak, objek, lisensi dan versi pada server. Halaman publik/registrasi tamu memakai Controller/Blade. Tidak membuat endpoint CRUD HTTP kedua untuk aksi Livewire.
-- Kode izin kanonik: halaman memakai `<named-route>.lihat`, aksi memakai `<named-route>.<namaMethod>`, route HTTP privat mutatif memakai `<named-route>.jalankan`; arsip tetap `arsip.<kode_modul>.lihat/ekspor`. Grant normal hanya kepada aktor yang ditulis pada row; aksi berlabel hak khusus memerlukan grant aktif pada `hak_khusus_pengguna` dan role minimum, tidak otomatis dari peran Bendahara. Lingkup tetap diperiksa; `W`, `K` dan supervisor adalah penugasan, bukan role. Hak tambahan CLI `pkl.lokasi.retensi` adalah khusus koordinator/petugas lokasi berizin, bukan owner otomatis. Alias `alumni_bersama` dan `mitra_bersama` adalah aturan OR lisensi, tidak masuk 15 katalog modul.
+- Pemetaan awal kode izin bisnis (disimpan eksplisit, tidak dihitung dari nama method/route saat runtime): halaman memakai `<named-route>.lihat`, aksi memakai `<named-route>.<namaMethod>`, route HTTP privat mutatif memakai `<named-route>.jalankan`; arsip tetap `arsip.<kode_modul>.lihat/ekspor`. Grant normal hanya kepada aktor yang ditulis pada row; aksi berlabel hak khusus memerlukan grant aktif pada `hak_khusus_pengguna` dan role minimum, tidak otomatis dari peran Bendahara. Lingkup tetap diperiksa; `W`, `K` dan supervisor adalah penugasan, bukan role. Hak tambahan CLI `pkl.lokasi.retensi` adalah khusus koordinator/petugas lokasi berizin, bukan owner otomatis. Alias `alumni_bersama` dan `mitra_bersama` adalah aturan OR lisensi, tidak masuk 15 katalog modul.
 - Kode peran di `peran.kode`: `owner`, `admin_sekolah`, `pimpinan`, `guru`, `tata_usaha`, `bendahara`, `pengelola_alumni`, `pengelola_sarana`, `guru_bk`, `editor_website`, `siswa`, `alumni`, `wali_siswa`. Kode aktor: `O` Owner, `AS` Admin Sekolah, `P` Pimpinan bidang/program, `G` Guru, `T` Tata Usaha, `B` Bendahara, `PA` Pengelola Alumni, `PS` Pengelola Sarana, `BK` Guru BK, `E` Editor, `S` Siswa, `AL` Alumni, `WA` Orang Tua/Wali terverifikasi. `W`=Guru dengan tugas wali, `K`=Guru/TU koordinator PKL. Kata pemilik/pegawai selalu tunduk batas role dan objek pada layar. Hak khusus koreksi/uang/publikasi tidak otomatis mengikuti hak lihat.
-- Tanggal/nama file migration baseline di T2 ditetapkan, bukan placeholder timestamp. Sesudah pernah dijalankan, file itu tidak diedit/dipecah/diurut ulang; perubahan baru memakai timestamp baru sesungguhnya. File framework sesi/reset disebut di T6 dan dijalankan pada R1.
+- Tanggal/nama file migration T2 adalah rencana urutan dependensi, bukan kewajiban memakai tanggal rancangan saat file belum dibuat. Sebelum pernah dijalankan atau dibagikan, susun file aktual sesuai kebutuhan tahap dan timestamp pembuatannya, lalu perbarui peta. Sesudah dijalankan/dibagikan, file tidak diedit/dipecah/diurut ulang; perubahan memakai migration additive baru dan tes upgrade. File framework sesi/reset direncanakan di T6 pada R1.
 - PHPUnit mengikuti scaffold Laravel untuk feature/integration; MariaDB untuk FK/lock/concurrency, bukan SQLite. Playwright untuk browser dengan data sintetis. Tidak mewajibkan test yang sekadar mencerminkan implementasi atau satu factory untuk setiap tabel.
 - XLSX memakai `phpoffice/phpspreadsheet`, PDF memakai `barryvdh/laravel-dompdf` dengan remote fetch/PHP di HTML nonaktif. Composer memilih versi stabil kompatibel Laravel13/PHP8.5, lalu mengunci lockfile; tidak menurunkan stack. CSV streaming untuk ekspor besar. Ini keputusan library, bukan instruksi memasang dependency pada revisi dokumen ini.
 
@@ -95,7 +113,7 @@ K2.10 hanya selesai bila bukti berikut ada untuk rilis target. Ini gerbang aplik
 
 ### T2. File migration, Model dan relasi
 
-Setiap row menunjuk satu file nyata yang akan dibuat. Kolom/FK/indeks persis mengikuti PRD §12.10; dependensi induk tabel di kolom terakhir harus sudah ada. Relasi setiap Model mengikuti seluruh FK dan aturan query lingkup kamus; parameter bebas tidak pernah menjadi nama class/tabel. Relasi inverse/lookup scope diuji pada `tests/Feature/Fondasi/MigrasiDanRelasiTest.php::test_instalasi_dan_upgrade_fk_urut`.
+Setiap row adalah usulan file dan urutan tabel, bukan kewajiban membuat seluruhnya di muka. Cocokkan kolom/FK/indeks terhadap rancangan PRD §12.10 dan invariant Bab 17; revisi fisik yang beralasan mengikuti T10; dependensi induk tabel di kolom terakhir harus sudah ada. Relasi setiap Model mengikuti seluruh FK dan aturan query lingkup kamus; parameter bebas tidak pernah menjadi nama class/tabel. Relasi inverse/lookup scope diuji pada `tests/Feature/Fondasi/MigrasiDanRelasiTest.php::test_instalasi_dan_upgrade_fk_urut`.
 
 | ID / rilis | File di database/migrations/ | Tabel / Model di app/Models/ | Dependensi |
 |---|---|---|---|
@@ -450,7 +468,7 @@ Inverse koleksi yang wajib karena dipakai aggregate:
 
 ### T3. Halaman, named route, komponen dan view
 
-Semua row adalah `GET` dengan nama route pada kolom pertama; handler adalah `app/Livewire/<komponen>.php`, view tepat pada kolom file. `render()` hanya query/proyeksi dan state baca (filter, pagination, tab, detail, riwayat), bukan mutasi. Form tambah/ubah/detail/konfirmasi berada dalam view/komponen row itu; tidak membutuhkan file form/detail kosong lain. Layout berasal `resources/views/layouts/<layout>.blade.php`. Hak halaman `<nama>.lihat` ditambah scope row. Aksi tulis lengkap ada di T4; transport HTTP di T5.
+Row berikut merencanakan halaman `GET` dengan nama route pada kolom pertama; susunan handler/view dapat disederhanakan melalui T10 sambil menjaga URL, hak dan perilaku. Rencana handler adalah `app/Livewire/<komponen>.php`, view tepat pada kolom file. `render()` hanya query/proyeksi dan state baca (filter, pagination, tab, detail, riwayat), bukan mutasi. Form tambah/ubah/detail/konfirmasi berada dalam view/komponen row itu; tidak membutuhkan file form/detail kosong lain. Layout berasal `resources/views/layouts/<layout>.blade.php`. Hak halaman `<nama>.lihat` ditambah scope row. Aksi tulis lengkap ada di T4; transport HTTP di T5.
 
 | Nama / rilis / modul | GET URL / file route | Komponen / view / layout | Aktor dan lingkup / tabel / task |
 |---|---|---|---|
@@ -841,7 +859,7 @@ Setiap metode test row T4 menegaskan happy path, field tidak sah, role/objek sal
 
 ### T5. Route HTTP, transport dan keluaran
 
-Nama, metode, URI dan handler dikunci. Handler vendor tetap milik dependency, tidak disalin ke source lokal. Handler lokal berada `app/Http/Controllers/`; method pada nama handler adalah method tepat yang akan dibuat. Semua mutasi web memakai CSRF; GET tidak mengubah data bisnis/lease. File test adalah rencana, bukan bukti hasil. Setiap route memakai `test_<nama_case>_<metode>_<nomor-row>` untuk memastikan nama test unik. Row fallback modul harus didaftarkan terakhir, sedangkan arsip berkas/ekspor sebelum detail generik.
+Metode, URL dan semantik akses mengikuti kontrak PRD Bab 15. Nama/file/handler di bawah adalah rencana binding; refactor mempertahankan URL, named route yang sudah dipakai serta kode izin, atau menyediakan kompatibilitas dan tes yang tercatat. Handler vendor tetap milik dependency, tidak disalin ke source lokal. Handler lokal direncanakan di `app/Http/Controllers/`. Semua mutasi web memakai CSRF; GET tidak mengubah data bisnis/lease. File test adalah rencana, bukan bukti hasil. Setiap route memakai `test_<nama_case>_<metode>_<nomor-row>` untuk memastikan nama test unik. Row fallback modul harus didaftarkan terakhir, sedangkan arsip berkas/ekspor sebelum detail generik.
 
 | Metode / URL / nama / rilis | File registrasi / handler | Akses / input | Respons / file test / kasus |
 |---|---|---|---|
@@ -907,7 +925,7 @@ Nama, metode, URI dan handler dikunci. Handler vendor tetap milik dependency, ti
 
 <a id="file-pendukung"></a>
 
-### T6. Seluruh file pendukung yang diperlukan
+### T6. Rencana file pendukung
 
 Tidak ada lapisan Service/Repository/Policy baru atau file infrastruktur. Daftar ini melengkapi Model/migration/komponen/view/Controller/test pada T2–T5. File bawaan vendor/generated build tidak menjadi source kustom yang harus ditulis.
 
@@ -1089,9 +1107,9 @@ Resource detail arsip yang diizinkan: Presensi=sesi/pengiriman/izin/tindak_lanju
 
 ### T8. Metode domain Model dan sumber tunggal aturan
 
-Daftar ini melengkapi relasi/casts tiap Model T2. Method UI/Controller hanya melakukan validasi transport, memeriksa hak, memanggil method domain, lalu merender hasil. Isi transaksi, pemetaan versi/sumber, locking dan invariant tidak disalin ke Controller lain.
+Daftar ini merencanakan pemilik tunggal aturan domain dan melengkapi relasi/casts Model T2. Nama/pecahan method dapat berubah melalui T10; tanggung jawab transaksi dan invariant tidak hilang. Method UI/Controller hanya melakukan validasi transport, memeriksa hak, memanggil method domain, lalu merender hasil. Isi transaksi, pemetaan versi/sumber, locking dan invariant tidak disalin ke Controller lain.
 
-| Model | Metode domain kanonik yang wajib dibuat |
+| Model rencana | Metode domain usulan; invariant tetap wajib |
 |---|---|
 | `app/Models/AdendumKerjaSama.php` | `catat()` |
 | `app/Models/AlbumWebsite.php` | `arsipkan()`, `simpan()`, `terbitkan()` |
@@ -1380,23 +1398,34 @@ UatNonItTest/Playwright menguji perilaku UI terotomasi. Kelulusan UAT tetap meme
 
 Format bukti per sesi: tanggal/penguji/role/rilis/commit/data sintetis/langkah/hasil yang diharapkan/hasil nyata/isu/perbaikan/keputusan. Nilai host/rahasia/performa nyata tidak diisi rekaan. Lihat bagian Checklist kesiapan rilis untuk tanda persetujuan dan NO-GO yang berlaku.
 
-### T10. Daftar perubahan dan batas kelengkapan
+### T10. Evaluasi rancangan, perubahan dan batas bukti
 
-**Kelengkapan spesifikasi** diukur dengan seluruh 15 kode modul dan Core memiliki tabel/kolom/constraint/status, file migration/model, halaman/aksi/route, hak objek, pemilik transaksi, laporan yang diperlukan dan test penerimaan yang terpetakan pada baseline ini. **Kelengkapan implementasi** tetap nol sampai source dibuat dan bukti test/UAT tersedia. Tidak ada persentase kesiapan produksi yang diturunkan dari jumlah baris dokumen.
+**Yang wajib:** perilaku bisnis, cakupan rilis, hak/lingkup, integritas data, hasil transaksi dan seluruh penerimaan yang berlaku. **Yang dapat dievaluasi:** jumlah/pecahan tabel, file, class/method, komponen, binding handler, rincian indeks dan nama test. Inventaris T1–T9 adalah rancangan awal, terutama untuk R2–R4; coverage 124/124 hanya berarti ID sudah dipetakan, bukan test lulus atau desain benar. Uji MariaDB, framework dan pengguna nyata tetap diperlukan.
 
-Perubahan kebutuhan baru boleh menambah kontrak secara eksplisit; tidak ada dokumen software yang menjamin tidak pernah membutuhkan revisi. Versi dependency patch, nilai rahasia, alamat host, data sekolah nyata, hasil performa dan persetujuan UAT berasal pelaksanaan/deployment yang sah, bukan keputusan teknis yang sengaja dibiarkan kosong. Jika source framework berbeda dari adapter yang diverifikasi, perubahan harus tercatat dan dites pada commit implementasi, tanpa menurunkan stack.
+Perubahan desain dalam cakupan yang sudah disetujui dikerjakan langsung dengan alasan dan bukti. Perubahan aturan produk, pengurangan cakupan R1 atau pelemahan keamanan/integritas tidak dibenarkan sebagai refactor. Versi dependency kompatibel dipilih dan dikunci saat implementasi; stack tidak diturunkan diam-diam.
+
+| Saat review | Yang dicatat dan ditindaklanjuti |
+|---|---|
+| Sebelum coding tahap berjalan | Subset ID/kebutuhan yang ditangani, tabel/file terkait, dependensi, alternatif lebih sederhana dan test yang membuktikan hasil. Jangan membuat file hanya untuk memenuhi inventaris. |
+| Setelah alur harian awal, sebelum langkah 9 | Bukti roster/transaksi/concurrency/hak/lisensi, query dan input UI, kebingungan pengguna; keputusan pertahankan atau revisi desain beserta blocker. |
+| Saat memulai R2–R4 atau menemukan masalah | Validasi ulang usulan skema/file terhadap pengalaman rilis terdahulu, API framework dan beban nyata; pilih perubahan yang paling sederhana yang tetap memenuhi kebutuhan. |
+| Setelah refactor | Peta aktual sinkron, kode izin tetap stabil, tes perilaku/regresi lulus, migration yang sudah dijalankan/dibagikan tetap utuh dengan jalur upgrade additive bila diperlukan. |
+
+**Format keputusan dalam Catatan progres implementasi:** tanggal/ID → masalah dan bukti → bagian PRD/TASK terdampak → rancangan lama dan baru → alasan → dampak data/URL/hak/upgrade → tes aktual/hasil atau belum diuji → commit dan tindak lanjut. Tidak memerlukan dokumen Markdown ketiga. Sebelum source ada, perbaiki rancangan yang belum dipakai; sesudah kontrak dipakai, jaga kompatibilitas dan uji migrasinya. Jika test/file berubah, perbarui T9/T9.1 agar setiap ID penerimaan tetap mempunyai pengujian nyata yang dapat ditelusuri.
+
+Tidak menurunkan persentase produksi dari jumlah tabel, file atau ID. Status saat revisi ini: Laravel belum dibangun; **BELUM DIUJI / NO-GO**. Secret/host/data sekolah/hasil performa/persetujuan UAT berasal pelaksanaan, tidak diisi rekaan. Seluruh Core, impor dan akademik R1 tetap wajib sebelum F8/F9 menyatakan R1 siap handover.
 
 ## Bahasa, struktur kode, dan penamaan (wajib)
 
 Ikuti PRD §3.3, §4.2 dan §12.1.1. Fokus fitur: `routes/`, `app/Http/Controllers/`, `app/Livewire/`, `app/Models/`, `app/Http/Middleware/`, `resources/`. Migration/seeder, tes, terjemahan bawaan `lang/id/` dan konfigurasi minimum hanya pendukung yang diperlukan. Hindari arsitektur tambahan; alur Controller/Livewire ringkas, relasi/transaksi konsisten pada Model, validasi server dan otorisasi objek pada setiap aksi.
 
 - [ ] K0.06 Tinjau struktur folder, metode singkat, penamaan jelas, penghindaran duplikasi/N+1 dan format Pint; tidak membuat lapisan generik yang belum dibutuhkan.
-- [ ] K0.07 Implementasikan inventaris exact T3–T6 untuk rilis target, lalu cocokkan metode/URL/named route/handler/hak/lingkup/view/test terhadap route:list dan route:cache. Pemetaan spesifikasi lengkap; checkbox menunggu source dan pengujian nyata, bukan memilih handler nanti.
+- [ ] K0.07 Gunakan T3–T6 untuk peta tahap/rilis, implementasikan route/handler/view nyata dan sinkronkan inventaris aktual sesuai T10. Cocokkan metode/URL/named route/hak/lingkup dengan route:list dan route:cache. Boleh revisi pecahan file yang beralasan; tugas tetap kosong sampai seluruh cakupan rilis target dan tesnya selesai.
 - [ ] K1.07 Terapkan tabel/kolom bisnis Bahasa Indonesia sesuai PRD; Model menetapkan tabel/FK eksplisit dan autentikasi `Pengguna` tetap kompatibel Laravel. Uji migration, relasi, constraint dan transaksi MariaDB.
-- [ ] K1.08 Buat migration exact T2/PRD §12.10 untuk rilis target, termasuk kolom/FK/UNIQUE/indeks/status dan dependensi yang sudah ditetapkan. Uji instalasi kosong serta upgrade salinan sintetis tanpa FK ke source masa depan; checkbox hanya setelah bukti implementasi lulus, bukan menunda finalisasi skema.
-- [ ] K1.09 Selesaikan seluruh Model/relasi/casts/query lingkup fondasi rilis setelah migration terkait; uji pada MariaDB, termasuk tanggal efektif, ID permanen, alias identitas, nullable/UNIQUE dan tidak meng-query struktur modul belum terpasang. Tidak mencentang selesai hanya karena file Model tersedia.
+- [ ] K1.08 Tinjau lalu implementasikan skema tahap berjalan mengacu T2/PRD §12.10 dan invariant Bab 17; mulai minimum R1, lengkapi sebelum setiap fitur. Revisi fisik/nama file dicatat sesuai T10 tanpa mengedit migration yang sudah dijalankan/dibagikan. Uji instalasi kosong/upgrade pada MariaDB dan tanpa FK ke source masa depan; tugas selesai setelah seluruh cakupan rilis target terbukti.
+- [ ] K1.09 Implementasikan Model/relasi/casts/query lingkup setelah migration terkait, mulai subset fondasi minimum dan lengkapi per fitur. Uji MariaDB, tanggal efektif, ID permanen, alias identitas dan nullable/UNIQUE saat relevan; tidak meng-query modul belum terpasang. Tugas selesai setelah cakupan rilis target terbukti, bukan setelah file Model tersedia.
 - [ ] K2.09 Terapkan 13 role inti PRD §4.2/13; gabungkan pengelolaan BKK/Tracer dalam Pengelola Alumni dan jabatan lain sebagai penugasan, bukan role baru; uji rangkap role, lingkup penugasan, larangan eskalasi owner, S/I siswa langsung dari wali kelas; persetujuan pejabat hanya untuk izin guru sendiri dan privasi laporan.
-- [ ] K2.10 Luluskan Gerbang fondasi pada dokumen ini sebelum implementasi operasional modul: boot, route/model/schema, akun/MFA/penugasan, lisensi/arsip, UI bersama serta Core/massal dengan bukti pengujian. Modul dalam manifest belum dinyatakan siap sebelum alur bisnis dan gerbang produksi rilisnya lulus.
+- [ ] K2.10 Luluskan Gerbang fondasi minimum sebelum pembuktian alur harian: boot, skema/model/roster minimum, akun/MFA/penugasan, lisensi/arsip dan UI bersama dengan tes. Tidak menunggu seluruh impor/kelulusan/proses massal. Catat subset bukti; seluruh Core tetap wajib sebelum gerbang produksi F8/F9. Manifest belum menyatakan modul siap hanya karena fondasi tersedia.
 - [ ] F0.11 Siapkan locale `id`, `lang="id"` dan terjemahan Indonesia untuk UI, autentikasi, validasi, pesan framework/paket, laporan serta teks aksesibilitas. Format tanggal/angka Indonesia dan Rupiah.
 - [ ] F7.13 Uji seluruh layar/alur rilis dalam Bahasa Indonesia termasuk error/validasi/reset sandi, modal, laporan/cetak dan tampilan mobile; kode status internal tidak tampil mentah.
 
@@ -1425,7 +1454,7 @@ PRD modul 02/03, §4.2.2, Bab 10, §13.5 dan §14.6 adalah acuan: jurnal kegiata
 - [ ] C0.05 Gunakan satu matriks cakupan R1–R4 PRD Bab 10/§14.1; seluruh gate, route, UAT dan task membedakan wajib Core, wajib modul dalam rilis, serta belum masuk rilis. Tidak menganggap katalog 15 modul sebagai 15 implementasi selesai.
 - [ ] C0.06 Uji upgrade pembaca arsip seluruh modul yang pernah aktif, aktif maupun nonaktif; preflight versi/jalur perantara dan kegagalan migrasi tidak membuka source/skema tak kompatibel. Jalankan regresi modul terpasang meski bukan modul baru yang dijual.
 
-## K — Kontrak routing, database dan keamanan aplikasi (wajib sebelum coding modul)
+## K — Kontrak routing, database dan keamanan aplikasi (diterapkan per lapisan dan rilis)
 
 **Acuan:** PRD Bab 15–18. Checklist hanya untuk source code, database secara logis, keamanan aplikasi, QA, dan handover. Pengadaan/konfigurasi infrastruktur tidak menjadi tugas developer.
 
@@ -1571,7 +1600,7 @@ PRD modul 02/03, §4.2.2, Bab 10, §13.5 dan §14.6 adalah acuan: jurnal kegiata
 
 **Acuan cakupan:** setiap baris F5 wajib memenuhi seluruh fitur inti, proses bisnis, status, keluaran, dan aturan penting modul terkait pada PRD Bab 7; ringkasan tabel bukan pengganti rincian PRD. QR aset adalah opsional, bukan syarat MVP. Nomor F5 adalah ID tugas tetap; urutan pengerjaan mengikuti rilis R1–R4 pada PRD Bab 10, bukan urutan tabel; kode modul adalah identitas tetap.
 
-**Syarat untuk setiap modul:** K2.10 fondasi rilis target lulus; migration/model rilis sudah terpasang sebelum UI bisnis dibuka. Kemudian selesaikan transaksi bisnis + validasi + role/permission + pemeriksaan lisensi + UI loading/modal + laporan bila dibutuhkan + pengujian proses utama. Modul harus berfungsi sendiri; integrasi PRD Bab 8 **wajib saat kedua modul terkait aktif**; saat pasangan tidak aktif, modul tetap berjalan dengan data minimum Core tanpa menduplikasi master bersama.
+**Syarat untuk setiap modul:** K2.10 fondasi minimum lulus; migration/model yang diperlukan alur tersedia sebelum UI bisnisnya dibuka. Pembuktian awal langkah 8 belum berarti seluruh F5 selesai; lengkapi semua fitur rilis dan Core pada langkah 9 sebelum gerbang produksi. Kemudian selesaikan transaksi bisnis + validasi + role/permission + pemeriksaan lisensi + UI loading/modal + laporan bila dibutuhkan + pengujian proses utama. Modul harus berfungsi sendiri; integrasi PRD Bab 8 **wajib saat kedua modul terkait aktif**; saat pasangan tidak aktif, modul tetap berjalan dengan data minimum Core tanpa menduplikasi master bersama.
 
 | ID F5 | Kode modul | Minimum yang dikerjakan | Role dan alur selesai | Referensi HTML |
 |---|---|---|---|---|
@@ -1731,7 +1760,7 @@ Ini penajaman modul yang ada, bukan tambahan role/modul; presensi sekolah tetap 
 
 ### Gerbang rilis per cakupan (semua yang relevan wajib terbukti)
 
-ID R1–R8 pada checklist berikut adalah ID gerbang lama, bukan nama paket rilis. Catat paket target R1/R2/R3/R4 pada informasi rilis. Gerbang Core/keamanan selalu wajib; modul yang belum masuk paket dicatat **Belum masuk rilis**, tidak dicentang lulus. Jangan menunda R1 karena fitur Keuangan/Sarpras R4 belum dibangun.
+ID R1–R8 pada checklist berikut adalah ID gerbang lama, bukan nama paket rilis. Catat paket target R1/R2/R3/R4 pada informasi rilis. Gerbang seluruh Core R1/keamanan selalu wajib; hasil pembuktian awal langkah 8 tidak menggantikan penyelesaian langkah 9. Modul yang belum masuk paket dicatat **Belum masuk rilis**, tidak dicentang lulus. Jangan menunda R1 karena fitur Keuangan/Sarpras R4 belum dibangun.
 
 - [ ] R1 Semua fungsi yang dijual benar-benar mempunyai backend Laravel/MariaDB (bukan simulasi HTML).
 - [ ] R2 Isolasi akses role + lisensi teruji dari UI hingga endpoint backend.
@@ -1834,7 +1863,7 @@ Jika ada kontradiksi, utamakan PRD; beri catatan konflik pada laporan progres. J
 
 ## Panduan prioritas
 
-Gunakan satu urutan kanonik pada bagian **Urutan pelaksanaan per lapisan**. Nomor F/K adalah ID stabil; peta file menunjukkan tanggung jawab, bukan instruksi membuat semua file sekaligus. Fondasi rilis harus lulus sebelum fitur operasional, lalu QA/handover dilakukan pada setiap rilis R1–R4. Jangan mengulang daftar fase F0→F1 yang mengabaikan prasyarat akun/model/lisensi.
+Gunakan satu urutan kanonik pada bagian **Urutan pelaksanaan per lapisan**. Nomor F/K adalah ID stabil; peta file menunjukkan tanggung jawab, bukan instruksi membuat semua file sekaligus. Gerbang minimum mendahului pembuktian alur harian; seluruh Core dan fitur rilis wajib selesai sebelum QA/UAT/handover rilis R1–R4. Jangan mengulang daftar fase F0→F1 yang mengabaikan prasyarat akun/model/lisensi.
 
 **Catatan:** tugas di repositori ini mencakup software development saja. Tim lain menangani penayangan dan operasi infrastrukturnya.
 
@@ -1844,7 +1873,7 @@ Gunakan satu urutan kanonik pada bagian **Urutan pelaksanaan per lapisan**. Nomo
 ## Panduan implementasi
 
 
-**Versi:** 1.3 · **Acuan:** `PRD.md` · **Checklist:** `TASK.md` · **Prototype UI:** `prototype/index.html`, halaman `01-owner.html` s.d. `16-jurnal-guru.html`, dan lima tema publik
+**Versi:** 1.4 · **Acuan:** `PRD.md` · **Checklist:** `TASK.md` · **Prototype UI:** `prototype/index.html`, halaman `01-owner.html` s.d. `16-jurnal-guru.html`, dan lima tema publik
 
 > **Cara pakai:** salin bagian **PROMPT UTAMA** ke asisten coding yang bekerja di repository Laravel. Sertakan file PRD, `TASK.md`, dan folder HTML prototipe sebagai referensi. Kerjakan task berdasarkan dependensinya, dan centang hanya setelah pengujian lulus. Implementasikan **bertahap**, mulai dari fondasi; jangan langsung menganggap contoh HTML sebagai aplikasi produksi.
 
@@ -1946,7 +1975,7 @@ Berlaku untuk impor siswa, penempatan kelas, promosi, kelulusan, tagihan massal,
 
 ### 7. Urutan implementasi (gunakan ID checklist dan prasyarat lapisan)
 
-Gunakan bagian **Urutan pelaksanaan per lapisan** serta **Peta file implementasi dan kepemilikan data** pada TASK sebagai urutan kanonik. Mulai F0.01–F0.03/K0.07, lalu kontrak K1.08 → migration → Model K1.09 → keamanan/lisensi → UI → Core/massal → K2.10 → fitur rilis → QA/UAT/upgrade/handover. Bagian F/K dipakai lintas lapisan; jangan menunggu semua F0 selesai untuk membuat tabel pengguna F1. F4 mendahului F1.07 dan akademik massal. R1 hanya Core + Presensi/Izin + Jurnal; R2–R4 mengikuti PRD Bab 10.
+Ikuti satu tabel kanonik **Urutan pelaksanaan per lapisan** pada TASK, termasuk gerbang minimum, pembuktian awal alur harian dan penyelesaian seluruh Core R1. Jangan menggantinya dengan urutan seluruh F0→seluruh F1 atau membangun semua usulan file sekaligus. Inventaris teknis dapat disederhanakan sesuai T10 tanpa mengurangi aturan bisnis, keamanan, hasil penerimaan atau cakupan PRD Bab 10. Impor/akademik/massal R1 tetap wajib sebelum produksi; F4 mendahului F1.07 dan akademik massal.
 
 **Untuk setiap lapisan/fitur:** tampilkan ID/cakupan dan daftar file aktual; perbarui peta jika nama/pecahan file berubah; jalankan tes yang membuktikan tanggung jawab lapisan; catat hasil/risiko. Jangan buka route/menu bisnis sebelum handler, skema, otorisasi dan perilakunya tersedia; jangan centang F5 karena hanya model/UI tersedia. Bukti gerbang fondasi dan produksi dipisahkan.
 
@@ -2170,7 +2199,7 @@ Checklist berikut melengkapi tugas F/K terkait; belum dicentang karena merupakan
 
 | Fase | Status | Bukti implementasi / hasil pengujian | Commit / PR |
 |---|---|---|---|
-| Peta route/file dan kontrak skema — K0.07/K1.08 | Inventaris lengkap T1–T10 ditetapkan; belum diimplementasikan/diverifikasi pada Laravel | Kamus PRD §12.10–12.11 dan inventaris TASK; belum bukti implementasi | — |
+| Peta route/file dan kontrak skema — K0.07/K1.08 | Rancangan awal T1–T10 tersedia untuk dievaluasi; belum diimplementasikan/diverifikasi pada Laravel | Kamus PRD §12.10–12.11 dan inventaris TASK; belum bukti implementasi | — |
 | Migration/model dan gerbang fondasi — K1.09/K2.10 | Belum dimulai | — | — |
 | F0 — Fondasi aplikasi | Belum dimulai | — | — |
 | K0–K2 — Route/DB/security | Belum dimulai | — | — |
@@ -2244,3 +2273,11 @@ Checklist berikut melengkapi tugas F/K terkait; belum dicentang karena merupakan
 - Referensi API resmi yang dibaca: [route Fortify](https://github.com/laravel/fortify/blob/1.x/routes/routes.php) dan [HandleRequests Livewire4](https://github.com/livewire/livewire/blob/4.x/src/Mechanisms/HandleRequests/HandleRequests.php). Ini verifikasi rancangan adapter, bukan bukti dependency sudah terpasang atau test Laravel telah lulus.
 - Pemeriksaan spesifikasi: coverage seluruh kode modul/ID penerimaan, kecocokan inventaris ke kamus, DAG migration dan FK lintas rilis, owner method Model, nama/URL unik, status/default dan konsistensi tabel Markdown. Hanya PRD/TASK diperbarui; tidak membuat source Laravel, tidak mengubah prototipe, tidak mencentang task aplikasi.
 - **Status produksi tetap BELUM SIAP / NO-GO.** Kelengkapan spesifikasi berarti kebutuhan disepakati terpetakan, bukan semua kode/test/UAT/performa/upgrade/keamanan sudah terbukti. Nilai rahasia/host/data sekolah/hasil uji nyata tetap diisi melalui proses implementasi/deployment, bukan direka pada dokumen.
+
+## Bukti evaluasi rencana pengembangan — 12 November 2026
+
+- PRD 4.12/TASK 2.1 membedakan kewajiban bisnis, keamanan dan hasil penerimaan dari usulan tabel/file/class/method/test. Angka inventaris bukan target implementasi atau persentase produksi; mekanisme evaluasi/perubahan ada di PRD §3.5 dan TASK T10.
+- Urutan kanonik menjadi fondasi minimum → pembuktian alur harian → penyelesaian seluruh Core dan fitur R1 → gerbang produksi. K2.10 tidak lagi menunggu impor, kelulusan atau mesin massal lengkap; seluruh pekerjaan tersebut tetap wajib sebelum R1 dirilis. Panduan dan prompt mengacu urutan yang sama. Catatan revisi terdahulu adalah riwayat, bukan urutan pelaksanaan terbaru.
+- Pembuktian awal mencakup presensi seluruh kelas, rollback satu baris gagal, timeout sebelum/sesudah commit, dua tab, perubahan izin, konfirmasi tanpa tenggat, jurnal mandiri, hak dan toggle lisensi. Uji pengguna awal dicatat hasil/jadwalnya; UAT lengkap tetap wajib sebelum produksi.
+- Pemeriksaan aktual: 10 langkah dengan dependensi tanpa siklus; Bab 4–11 dan seluruh 124 baris skenario penerimaan PRD identik dengan baseline sebelumnya; 190 ID tugas unik, 13 role, 15 modul, cakupan R1–R4, referensi/anchor dan struktur tabel konsisten. Kamus dan pemetaan inventaris/test tetap cocok; urutan FK lintas rilis diperiksa. `git diff --check` lulus.
+- Perubahan hanya PRD/TASK. Tidak membuat source Laravel atau mengubah prototipe; seluruh task aplikasi tetap kosong. Pemeriksaan di atas adalah validasi dokumen, bukan hasil pengujian transaksi, keamanan, performa, upgrade atau UAT aplikasi. **Kesiapan produksi tetap BELUM DIUJI / NO-GO.**
