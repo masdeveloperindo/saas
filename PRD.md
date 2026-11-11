@@ -1,14 +1,14 @@
 # PRD Platform SaaS SMK — Dedicated VPS per Sekolah
 
-**Product Requirements Document (PRD) · Versi 4.9 · Presensi PKL lokasi dan kemudahan penggunaan**
+**Product Requirements Document (PRD) · Versi 4.10 · Fondasi per lapisan dan kontrak kesiapan rilis**
 **Ruang lingkup:** Core System + 15 modul operasional SMK.  
 **Arsitektur:** satu sekolah = satu VPS = satu instalasi Laravel + MariaDB.  
 **Tujuan utama:** aplikasi praktis; perpindahan siswa, kelulusan, alumni, dan keuangan selalu konsisten.
 
 | **Dokumen** | **Keterangan**                                                       |
 |-------------|----------------------------------------------------------------------|
-| Versi       | 4.9 — pengembangan aplikasi saja; konfigurasi infrastruktur tidak termasuk pekerjaan developer |
-| Tanggal     | Revisi keputusan operasional                                                      |
+| Versi       | 4.10 — pengembangan aplikasi saja; konfigurasi infrastruktur tidak termasuk pekerjaan developer |
+| Tanggal     | 11 November 2026 — penegasan arsitektur dan urutan pengembangan                     |
 | Status      | Draf implementasi MVP; persetujuan alur operasional sekolah diperlukan                   |
 | Target      | SMK di Indonesia                                                     |
 | Stack       | Laravel 13 · Livewire 4 · Tailwind CSS 4 · Nginx · PHP 8.5 · MariaDB |
@@ -137,6 +137,21 @@
 - Tanggal, nama siswa, kelas, tempat PKL dan guru terisi dari akun/penugasan yang sah. Pilihan dibatasi pada data yang boleh diakses. Tandai isian wajib secukupnya; kesalahan tampil di dekat isian, input tidak hilang saat gagal.
 - Tombol utama cukup satu per langkah, ukuran sentuh minimal 44px, teks terbaca dan tabel tidak memaksa geser horizontal untuk tindakan penting di HP. Loading mencegah kirim ganda; sukses menampilkan hasil nyata dan langkah berikutnya. Konfirmasi modal dipakai untuk perubahan berisiko, bukan setiap pilihan kecil.
 - Uji dengan perwakilan guru, wali, siswa dan petugas sekolah yang bukan IT: pengguna harus dapat menyelesaikan alur utama menggunakan label/bantuan singkat di layar tanpa penjelasan istilah teknis. Catat bagian yang membingungkan dan perbaiki sebelum UAT dinyatakan lulus. Tidak mengklaim lulus hanya dari tampilan prototipe.
+
+## 3.5 Pembagian dokumen dan fondasi pengembangan per lapisan
+
+**Alur:** Petakan Seluruh URL/Menu → Tetapkan Skema dan Relasi → Migration Fondasi Rilis → Model dan Uji Relasi → Autentikasi/Hak Akses/Lisensi → Antarmuka Bersama → Alur Core → Gerbang Fondasi → Fitur Rilis hingga Tuntas → Uji Produksi → Handover.
+
+- **PRD** menetapkan kebutuhan produk, aturan bisnis, kontrak data/URL, batas arsitektur dan hasil penerimaan. **TASK** menetapkan urutan kerja, prasyarat, peta file, ID pekerjaan dan bukti pelaksanaannya. Rincian file ditempatkan pada TASK agar PRD tidak menjadi salinan struktur source yang mudah tertinggal.
+- Rancang seluruh Core dan 15 modul sejak awal, termasuk nama route, pemilik data bersama, model/relasi dan rilis pertama yang memakainya. Implementasi mengikuti Bab 10: semua migration/model fondasi **rilis target** diselesaikan sebelum layar bisnisnya dibuka. Ini tidak mewajibkan memasang seluruh tabel atau membuat kelas kosong untuk fitur R2–R4 pada R1.
+- Pembagian F/K pada TASK adalah kelompok pekerjaan, bukan instruksi menyelesaikan seluruh F0 sebelum menyentuh F1. Akun dan autentikasi memerlukan skema/model pengguna; navigasi berizin memerlukan hak akses, penugasan dan katalog/lisensi. TASK wajib memecah dependensi sampai tingkat ID agar tidak ada ketergantungan berputar.
+- Peta route dibuat dahulu. Route nyata hanya menunjuk Controller/Livewire yang tersedia, dilindungi middleware yang sudah terdaftar dan dilengkapi pengujian. Prefix modul belum siap boleh ditolak secara terkontrol; jangan mendaftarkan handler yang belum ada atau menampilkan menu fitur kosong sebagai fitur siap.
+- Model mempunyai tabel/FK nyata, casts, relasi, query lingkup dan aturan integritas yang diuji pada MariaDB. Satu model tidak wajib untuk setiap pivot sederhana; pivot mempunyai model khusus bila memiliki perilaku/riwayat bisnis. Membuat semua nama file tidak menjadi bukti lapisan selesai.
+- Setelah fondasi rilis lulus, fitur diselesaikan dari aksi pengguna sampai transaksi, bukti simpan, laporan yang diperlukan dan pengujiannya. Contoh R1: presensi/izin lalu jurnal guru, masing-masing sampai berfungsi dan diuji; jangan menunda seluruh pengujian sampai semua modul selesai.
+- Rilis berikutnya mengulang urutan lapisan untuk tambahannya. Migration modul yang **sudah dikirim dalam source rilis terpasang** tetap diterapkan meski lisensinya nonaktif; fitur masa depan yang source-nya belum dikirim tidak dianggap terpasang. Toggle owner hanya mengubah akses, tidak menjalankan migration, menambah/menghapus tabel, atau memuat source baru.
+- Scope folder tetap §3.3. Peta file tidak mengharuskan lapisan Service/Repository/Policy tambahan, API terpisah, paket modul, worker atau konfigurasi host. Jangan menambahkan file hanya untuk mengisi pola; satu aturan bisnis mempunyai satu implementasi kanonik yang dipanggil Controller/Livewire terkait.
+
+**Gerbang fondasi:** source rilis harus bisa boot, named routes/menu konsisten, migration/model/relasi lulus, login/MFA owner dan izin lingkup bekerja, katalog/lisensi tidak merusak Core, berkas/arsip terlindungi, serta komponen UI dan proses massal Core yang dipakai lulus. Gerbang ini mendahului implementasi operasional modul; kesiapan produksi tetap memerlukan transaksi fitur, pengujian kegagalan/concurrency, keamanan, upgrade dan UAT Bab 14/17/18. Dokumen dan kerangka file saja tidak memberi status siap produksi.
 
 # 4. Core system dan role
 
@@ -1524,6 +1539,15 @@ Katalog akhir tetap **Core + 15 modul berlisensi**. Istilah MVP berarti **R1**, 
 - Nilai status bisnis memakai kode Indonesia yang konsisten (contoh `menunggu`, `diproses`, `berhasil`, `gagal`); tampilkan label manusiawi seperti **Sedang diproses**. Kode modul lisensi dan path route yang sudah dikunci tidak diubah hanya untuk penerjemahan.
 - Ini perubahan spesifikasi sebelum aplikasi dibuat, bukan migrasi database operasional. Bila kelak ditemukan database berisi data, buat migration perubahan nama beserta pengujian relasi; jangan hapus tabel atau reset data untuk menerapkan penamaan.
 
+### 12.1.2 Urutan migration dan relasi lintas rilis
+
+**Alur:** Tabel Induk → Tabel Anak → Pivot/Riwayat → Constraint/Indeks → Uji Relasi → Uji Upgrade Data Lama.
+
+- Urutan konkret per kelompok berada pada TASK. Tabel pengguna/peran dan master didahulukan; tabel siswa/guru mendahului kelas/penugasan; riwayat, transaksi dan pivot dibuat setelah induknya. FK selalu kompatibel tipe/unsigned/UUID. Relasi melingkar diselesaikan dengan migration penambahan FK setelah kedua tabel tersedia, bukan menonaktifkan pemeriksaan FK.
+- Semua tabel/constraint yang dipakai fitur rilis target harus terpasang sebelum fitur dinyatakan siap. FK ke tabel modul rilis mendatang tidak boleh menyebabkan instalasi R1 gagal. Contoh: pada R1 presensi tidak memerlukan Jadwal; kolom/FK opsional `sesi_pelajaran.jadwal_pelajaran_id` ditambahkan melalui migration additive R2 setelah `jadwal_pelajaran` tersedia. Source R1 tidak meng-query kolom atau relasi itu; sumber sesi tetap penugasan mengajar. Kontrak akhir §12.6 tetap wajib ketika kedua struktur telah dipasang.
+- Pemilik master bersama ditetapkan sebelum migration: identitas dan penugasan pada Core; `ruang` pada master bersama; `mitra_industri` untuk PKL/HUBIN/BKK; `aset`/peminjaman unit untuk Sarpras/Lab. Tabel bersama dibuat sekali saat rilis pertama yang memakainya, tanpa mewajibkan lisensi modul pasangannya.
+- Uji instalasi kosong dan upgrade versi sebelumnya secara terpisah. Setelah rilis digunakan, jangan mengedit migration lama yang sudah dijalankan sekolah; tambahkan migration baru dan pertahankan kompatibilitas pembaca arsip serta data historis §14.6.
+
 ## 12.2 Tabel inti yang harus dibuat lebih dahulu
 
 | Tabel | Kolom pokok | Relasi / batasan penting |
@@ -1537,6 +1561,8 @@ Katalog akhir tetap **Core + 15 modul berlisensi**. Istilah MVP berarti **R1**, 
 | `program_keahlian`, `konsentrasi_keahlian` | Program: `id`, `kode`, `nama`, `durasi_tahun`; konsentrasi: FK program, kode/nama/status dan riwayat perubahan. | Durasi 3/4 tahun; konsentrasi opsional, histori nama dan program induk terjaga. |
 | `tahun_ajaran`, `semester` | Tahun, tanggal, status aktif, nomor semester | Satu tahun ajaran operasional aktif pada satu waktu; semester terkait tahun yang benar. |
 | `mata_pelajaran` | Kode, nama, program opsional | Dipakai Jadwal dan Jurnal. |
+| `ruang` | `id`, `kode` unik, `nama`, `jenis`, `aktif` | Master lokasi/unit bersama untuk penugasan, Jadwal dan Lab; bukan reservasi ruang atau modul baru. |
+| `berkas_privat` | `id`, `disk`, `lokasi_berkas`, `nama_asli`, `mime`, `ukuran_byte`, `checksum` nullable, `diunggah_oleh`, timestamp | Metadata file opsional privat. Record bisnis menaut berkas melalui FK yang dibuat saat domain terkait tersedia; pembaca berizin ditetapkan source, bukan nama model/path dari pengguna. ID berkas bukan bukti hak unduh. |
 | `kelas` | `tahun_ajaran_id`, `program_keahlian_id`, `konsentrasi_keahlian_id` nullable, `tingkat`, `nama`, `wali_kelas_id` | Rombel harus terkait satu tahun ajaran; nama kelas unik **di dalam tahun ajaran**, bukan global. |
 | `kepesertaan_siswa` | `siswa_id`, `tahun_ajaran_id`, `program_keahlian_id`, `konsentrasi_keahlian_id` nullable, `tingkat`, `status` | **UNIQUE (`siswa_id`, `tahun_ajaran_id`)**: satu enrolmen per siswa per tahun ajaran. |
 | `penempatan_kelas_siswa` | `kepesertaan_siswa_id`, `kelas_id`, `berlaku_mulai`, `berlaku_sampai`, `alasan` | Riwayat pindah kelas; tidak boleh ada rentang tanggal bertabrakan untuk enrolmen siswa yang sama. |
@@ -1636,6 +1662,8 @@ Untuk MVP, gunakan **satu tagihan untuk satu jenis biaya dalam satu periode**, d
 | `kehadiran_siswa` | `id`, `sesi_pelajaran_id`, `siswa_id`, `penempatan_kelas_siswa_id`, `status_dasar_guru` nullable, `izin_siswa_id` nullable, `status_kehadiran` nullable, `sumber_status`, `versi_sumber`, `status_pemeriksaan`, `catatan`, `dikirim_pada`, `dikonfirmasi_oleh` nullable, `dikonfirmasi_pada` nullable | UNIQUE (`sesi_pelajaran_id`, `siswa_id`); siswa sesuai penempatan saat sesi. Koreksi membatalkan konfirmasi lama dengan jejak audit, lalu minta konfirmasi ulang. |
 | `tindak_lanjut_presensi` | `id`, `siswa_id`, `tanggal`, `wali_kelas_id`, `guru_bk_id` nullable, `ringkasan_masalah`, `hasil_klarifikasi` nullable, `dirujuk_pada` nullable, `penanggung_jawab_id`, `tindakan`, `status` (temuan/klarifikasi/dirujuk/tindak_lanjut/selesai), `hasil` nullable, `diselesaikan_oleh` nullable, `diselesaikan_pada` nullable | Kolaborasi wali kelas/BK sesuai penugasan; bukan tempat catatan rahasia konseling. Referensi presensi terkait harus dapat ditelusuri. |
 
+**Referensi lampiran:** istilah lokasi/path lampiran pada tabel ringkas adalah deskripsi penyimpanan, bukan URL publik. Implementasi record bisnis menaut FK nullable `berkas_privat_id` (atau tabel penghubung untuk beberapa lampiran) dan membaca lokasi melalui metadata `berkas_privat`; lampiran tetap opsional. Jangan menyimpan lokasi bebas dari input pengguna atau memakai dua sumber path yang bisa berbeda.
+
 **Aturan izin–presensi:** catatan S/I oleh wali kelas langsung berlaku pada jam dalam rentang izin, termasuk sesi yang baru dibuat kemudian. Jika ada konflik versi ketika guru menyimpan, tolak seluruh kiriman dan muat ulang status terbaru. Catatan lampau dikoreksi wali kelas dengan audit, tidak membuka pemilih tanggal guru. Izin guru terpisah pada `pengajuan_izin_pegawai` sesuai persetujuan pejabat, tanpa presensi guru.
 
 **Jejak pengiriman presensi:** tabel `pengiriman_presensi` menyimpan `id`, `kunci_idempotensi` unik, `guru_id` (pengajar), `dicatat_oleh` (pengguna pelaku sebenarnya), `tanggal`, `versi_daftar`, `versi_data`, `jumlah_diharapkan`, `jumlah_tersimpan`, `ringkasan_status`, `disimpan_pada`. Relasi `sesi_pengiriman_presensi` mengaitkan pengiriman ke sesi yang ditulis. Token yang belum commit tidak boleh dilaporkan berhasil; token tersimpan menjadi bukti hasil retry. Tambahkan versi integer pada sesi untuk konflik dua tab dan versi sumber izin; kunci sesi dalam urutan ID konsisten bila menyimpan beberapa jam agar mengurangi deadlock. `jumlah_tersimpan = jumlah_diharapkan` dan kesamaan himpunan siswa wajib diverifikasi sebelum commit. Tidak memakai mesin operasi massal per siswa untuk pengiriman kelas ini.
@@ -1706,6 +1734,8 @@ Token lokasi sementara disimpan sebagai state transaksi berizin, berumur 60 deti
 | `katalog_modul` | `id`, `kode` UNIQUE, `nama` | Lima belas kode stabil. Manifest rilis pada source menetapkan modul yang sudah diimplementasikan, versi minimum skema dan kemampuan baca arsip; owner tidak dapat mengubah kesiapan rilis dari form lisensi. |
 | `lisensi_modul` | `id`, `modul_id` UNIQUE FK katalog, `aktif`, `mulai_pada` nullable, `berakhir_pada` nullable, `versi_status` integer, `pertama_diaktifkan_pada` nullable, `diubah_oleh` | Satu baris per modul per instalasi. `aktif` saja tidak cukup: fitur operasional wajib lulus kesiapan rilis/skema dan rentang lisensi. Timestamp disimpan UTC, batas diperiksa dengan zona `Asia/Jakarta`; batas akhir eksklusif. |
 | `riwayat_lisensi_modul` | `id`, `lisensi_modul_id`, `status_lama`, `status_baru`, `versi_lama`, `versi_baru`, `alasan`, `dibuat_oleh`, `created_at` | Perubahan owner ber-audit dalam transaksi yang sama. Riwayat aktivasi sah menjadi dasar kelayakan arsip; jangan mengisi seluruh flag pernah aktif lewat seeder. |
+
+**Data administrasi langganan owner:** `langganan_saas` menyimpan `id`, periode mulai/akhir, snapshot paket/modul yang disepakati, nilai kontrak, status dan catatan; `pembayaran_langganan_saas` menyimpan FK `langganan_saas_id`, nominal, tanggal, metode manual, referensi/bukti opsional dan pencatat. Keduanya tidak memakai tabel `tagihan`/`pembayaran` siswa. Pencatatan pembayaran owner tidak otomatis mengubah tanggal/status lisensi; perubahan lisensi tetap tindakan owner terkonfirmasi dan diaudit sesuai Bab 6.
 
 Perubahan lisensi oleh owner mengunci baris `lisensi_modul`; mutasi modul memakai urutan lock yang konsisten dan memeriksa hak/rentang lisensi sebelum menulis. **Nonaktivasi manual** menunggu transaksi pendek yang sudah memegang lock selesai utuh sesuai §13.5. **Kedaluwarsa berdasarkan waktu** berbeda: transaksi memeriksa waktu server lagi sebelum commit; bila batas akhir telah terlewati, rollback seluruh transaksi dan tampilkan pesan lisensi berakhir, tanpa hasil parsial. Pemeriksaan token/bukti kemudian membedakan commit yang sudah berhasil dari rollback. Tiap batch/request baru memeriksa ulang; tidak menambah Scheduler. Seeder hanya upsert katalog kode/nama dan membuat lisensi awal nonaktif bila belum ada, tidak memperpanjang atau mengaktifkan lisensi existing. Upgrade menyimpan manifest/versi rilis dan membandingkannya dengan migration yang benar-benar terpasang sebelum memberi status siap.
 
@@ -1813,11 +1843,11 @@ Penamaan permission tetap konsisten: `resource.action`, misalnya `siswa.view`, `
 
 ## 14.1 Urutan implementasi menurut rilis R1–R4
 
-Nomor F/K pada `TASK.md` adalah ID pekerjaan stabil, bukan paket produk. **Bab 10 adalah satu-satunya pengelompokan rilis.** Setiap rilis menjalankan QA, UAT, arsip/lisensi, upgrade dan handover untuk fitur yang ditambahkan beserta regresi fitur yang sudah terpasang.
+Nomor F/K pada `TASK.md` adalah ID pekerjaan stabil, bukan paket produk atau urutan folder. Jalankan fondasi per lapisan §3.5 dengan prasyarat ID pada TASK, lalu selesaikan fitur rilis dari UI sampai database dan tes. **Bab 10 adalah satu-satunya pengelompokan rilis.** Setiap rilis menjalankan QA, UAT, arsip/lisensi, upgrade dan handover untuk fitur yang ditambahkan beserta regresi fitur yang sudah terpasang.
 
 | Tahap | Implementasi | Syarat selesai dan bukti |
 |---|---|---|
-| Fondasi R1 | F0 + K0–K2 terkait; skema/master F1 dan penugasan, katalog 15 modul, owner/lisensi F3; Core selalu berjalan | Login/MFA owner, role/lingkup, route Core, instalasi dan migration aman. Katalog bukan klaim 15 modul sudah selesai. |
+| Fondasi R1 | Peta route/file → kontrak skema → migration → model/relasi → auth/izin/lisensi → UI bersama; bagian F0/F1/F3/K/C0 terkait mengikuti dependensi ID pada TASK | Gerbang fondasi TASK lulus: bootstrap, FK/UNIQUE, relasi, login/MFA, lingkup, lisensi/arsip dan UI aman; katalog tidak berarti 15 modul selesai. |
 | Data/histori R1 | F4 sebelum impor F1.07; F2 siklus akademik/kelulusan dan profil alumni Core | Transaksi per item massal, ID siswa/histori utuh, 600 siswa sintetis dan retry lulus; registrasi alumni mandiri belum dibuka sebelum BKK/Tracer siap. |
 | Operasional R1 | F5.03 Absensi/Izin dan F5.06 Jurnal Kegiatan, integrasi F6 yang relevan | Presensi hari ini satu kelas atomik, S/I wali langsung, konfirmasi tanpa tenggat, pendampingan dasar, jurnal kegiatan/hasil tanpa jadwal. OP dan UAT R1 lulus. |
 | Modul R2 | F5.02 Surat, F5.01 Website/5 tema, F5.04 Pelanggaran, F5.08 BK, F5.07 Jadwal | Semua alur/pengecualian modul R2, regresi R1 serta independensi modul lulus. |
@@ -1825,7 +1855,7 @@ Nomor F/K pada `TASK.md` adalah ID pekerjaan stabil, bukan paket produk. **Bab 1
 | Modul R4 | F5.09 Keuangan, F5.10 Sarpras, F5.11 Lab, F5.15 Supervisi | Tagihan/pembayaran historis, aset/stok dan supervisi lulus; regresi fitur terdahulu yang terpasang. |
 | QA/handover setiap rilis | K3, F7–F9 sesuai cakupan dan uji upgrade §14.6 | Bukti fitur+keamanan+UAT, tag/schema/runtime, jalur upgrade dan pemulihan; modul di luar cakupan tetap belum siap/nonaktif. |
 
-F2.14 boleh menyiapkan kontrak/model tagihan dan fixture integritas saat fondasi; ini **bukan** layanan Keuangan siap pakai. Pengujian transaksi uang nyata dan kriteria tagihan/cicilan menjadi gerbang R4 saat modul Keuangan masuk rilis. Demikian pula profil alumni dari kelulusan adalah Core, sedangkan registrasi/lamaran/survei adalah R3. Jangan membangun frontend modul lain hanya untuk memenuhi gerbang R1.
+F2.14 menetapkan kontrak ID/snapshot historis sejak fondasi; migration/model tagihan serta fixture uang diselesaikan saat R4 atau diuji lebih awal jika skemanya memang sudah dipasang. Tabel Keuangan bukan prasyarat R1; ini **bukan** layanan Keuangan siap pakai. Pengujian transaksi uang nyata dan kriteria tagihan/cicilan menjadi gerbang R4 saat modul Keuangan masuk rilis. Demikian pula profil alumni dari kelulusan adalah Core, sedangkan registrasi/lamaran/survei adalah R3. Jangan membangun frontend modul lain hanya untuk memenuhi gerbang R1.
 
 ## 14.2 Standar semua halaman agar pengalaman pengguna konsisten
 
